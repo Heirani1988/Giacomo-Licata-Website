@@ -106,8 +106,8 @@ const Footer = () => {
         </FooterSection>
         <FooterSection>
           <SocialIcons>
-            <a href="https://facebook.com"><img src={facebookIcon} alt="Facebook" /></a>
-            <a href="https://instagram.com"><img src={instagramIcon} alt="Instagram" /></a>
+            <a href="https://www.facebook.com/p/Giacomo-Licata-Barber-Shop-100042074387343/"><img src={facebookIcon} alt="Facebook" /></a>
+            <a href="https://www.instagram.com/giacomolicatasbarbershop/"><img src={instagramIcon} alt="Instagram" /></a>
             <a href="https://www.google.com/search?q=giacomo+licata&rlz=1C1ASUC_enGB652GB652&oq=giacomo+licata&gs_lcrp=EgZjaHJvbWUqBggAEEUYOzIGCAAQRRg7MgYIARBFGDwyBggCEEUYPNIBCDI5MTBqMGo5qAIAsAIB&sourceid=chrome&ie=UTF-8#lrd=0x487191dd79204213:0xc3b41a8c31805052,1,,,,"><img src={googleIcon} alt="Google" /></a>
           </SocialIcons>
         </FooterSection>
