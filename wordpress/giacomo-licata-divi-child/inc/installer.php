@@ -135,8 +135,12 @@ function gl_import_image( $filename, &$map, &$log ) {
  * @return int Post ID or 0.
  */
 function gl_save_builder_post( array $postarr, &$log, $label ) {
+	$is_layout = in_array( $postarr['post_type'], array( 'et_header_layout', 'et_body_layout', 'et_footer_layout' ), true );
 	if ( ! empty( $postarr['ID'] ) ) {
 		$id = wp_update_post( $postarr, true );
+	} elseif ( $is_layout && function_exists( 'et_theme_builder_insert_layout' ) ) {
+		// Divi's own helper also sets the layout_type term the Theme Builder expects.
+		$id = et_theme_builder_insert_layout( $postarr );
 	} else {
 		$id = wp_insert_post( $postarr, true );
 	}
@@ -144,9 +148,17 @@ function gl_save_builder_post( array $postarr, &$log, $label ) {
 		$log[] = "Failed to save {$label}: " . $id->get_error_message();
 		return 0;
 	}
+	if ( ! $id ) {
+		$log[] = "Failed to save {$label}.";
+		return 0;
+	}
 	update_post_meta( $id, '_et_pb_use_builder', 'on' );
+	update_post_meta( $id, '_et_pb_use_divi_5', 'on' );
 	update_post_meta( $id, '_et_builder_version', 'VB|Divi|' . gl_d5_version() );
 	update_post_meta( $id, '_et_pb_old_content', '' );
+	// Divi 5 caches each post's module list to decide which scripts to load; a stale
+	// cache can leave modules without their scripts. Divi rebuilds it on next view.
+	delete_post_meta( $id, '_divi_dynamic_assets_cached_modules' );
 	return (int) $id;
 }
 
@@ -202,13 +214,33 @@ function gl_install_theme_builder( $overwrite, $resolver, &$log ) {
 		}
 	}
 	if ( ! $template_id ) {
-		$template_id = (int) wp_insert_post(
-			array(
-				'post_type'   => $tpl_type,
-				'post_status' => 'publish',
-				'post_title'  => 'Default Website Template',
-			)
-		);
+		if ( function_exists( 'et_theme_builder_store_template' ) ) {
+			$template_id = (int) et_theme_builder_store_template(
+				$tb_id,
+				array(
+					'id'           => 0,
+					'title'        => 'Default Website Template',
+					'default'      => '1',
+					'enabled'      => '1',
+					'layouts'      => array(
+						'header' => array( 'id' => 0, 'enabled' => true ),
+						'body'   => array( 'id' => 0, 'enabled' => true ),
+						'footer' => array( 'id' => 0, 'enabled' => true ),
+					),
+					'use_on'       => array(),
+					'exclude_from' => array(),
+				),
+				true
+			);
+		} else {
+			$template_id = (int) wp_insert_post(
+				array(
+					'post_type'   => $tpl_type,
+					'post_status' => 'publish',
+					'post_title'  => 'Default Website Template',
+				)
+			);
+		}
 		if ( ! $template_id ) {
 			$log[] = 'Theme Builder: could not create the default template – skipped.';
 			return;

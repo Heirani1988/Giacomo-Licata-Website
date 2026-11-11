@@ -72,16 +72,20 @@ function gl_d5_section( $label, $class, array $rows ) {
 }
 
 /**
- * @param string $structure Divi column structure, e.g. "1_3,2_3".
+ * Divi 5 rows are flex rows: `flexColumnStructure` must name the column count,
+ * and each column's width comes from its own `flexType` (see gl_d5_column()).
+ *
+ * @param string $structure Column layout, e.g. "1_3,2_3" (documentation only; widths live on the columns).
  */
 function gl_d5_row( $label, $class, $structure, array $columns ) {
+	unset( $structure );
 	return gl_d5_block(
 		'divi/row',
 		array(
 			'module' => gl_d5_module_attrs(
 				$label,
 				$class,
-				array( 'columnStructure' => array( 'desktop' => array( 'value' => $structure ) ) )
+				array( 'flexColumnStructure' => array( 'desktop' => array( 'value' => 'equal-columns_' . count( $columns ) ) ) )
 			),
 		),
 		$columns
