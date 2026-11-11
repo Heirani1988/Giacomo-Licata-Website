@@ -1,26 +1,32 @@
 <?php
 /**
- * Page content for the Giacomo Licata site, expressed as Divi 5 layouts.
+ * Page + Theme Builder content for the Giacomo Licata site, built from native
+ * Divi 5 modules (section / row / column / group / heading / text / image /
+ * slider / video / link). Styling lives in each module's Divi design settings,
+ * so everything is editable in the Visual Builder.
  *
- * Each page is a tree of Divi 5 blocks (divi/section > divi/row > divi/column >
- * divi/text | divi/code). The HTML inside the modules reproduces the original
- * React site's markup, and is styled by assets/css/site.css.
+ * Attribute paths follow the divi5-skill reference (github.com/divilovewp/divi5-skill),
+ * which documents Divi 5.11-5.16.
  *
- * Image references use the token {{img:filename}} and are swapped for the
- * Media Library URL when the installer runs.
+ * Image references use {{img:filename}} (Media Library, resolved by the
+ * installer) and {{theme:filename}} (theme assets).
+ *
+ * The only things not expressed as Divi settings (approved custom extras in
+ * assets/css/site.css + assets/js/site.js) are: the fixed header that turns
+ * dark on scroll, the hover overlays on the Team / News images, the current
+ * page highlight in the menu, and the News lightbox. Modules that take part
+ * carry the CSS classes gl-header, gl-hover-card, gl-hover-overlay, gl-nav-item.
  *
  * @package GiacomoLicata
  */
 
 defined( 'ABSPATH' ) || exit;
 
-/* -------------------------------------------------------------------------
- * Divi 5 block helpers
- * ---------------------------------------------------------------------- */
+/* =========================================================================
+ * Core block helpers
+ * ====================================================================== */
 
-/**
- * Divi builder version stamped on every block.
- */
+/** Divi builder version stamped on every block (the installed Divi version). */
 function gl_d5_version() {
 	if ( defined( 'ET_BUILDER_PRODUCT_VERSION' ) ) {
 		return ET_BUILDER_PRODUCT_VERSION;
@@ -29,33 +35,10 @@ function gl_d5_version() {
 	if ( $divi->exists() && $divi->get( 'Version' ) ) {
 		return $divi->get( 'Version' );
 	}
-	return '5.0.0';
+	return '5.16.0';
 }
 
-/**
- * Common "module" attribute group: admin label + CSS class.
- *
- * @param string $label Admin label shown in the Divi layers panel.
- * @param string $class CSS class(es).
- * @param array  $advanced Extra entries for module.advanced.
- */
-function gl_d5_module_attrs( $label, $class, $advanced = array() ) {
-	$module = array();
-	if ( $label ) {
-		$module['meta'] = array( 'adminLabel' => array( 'desktop' => array( 'value' => $label ) ) );
-	}
-	if ( $class ) {
-		$advanced['htmlAttributes'] = array( 'desktop' => array( 'value' => array( 'class' => $class ) ) );
-	}
-	if ( $advanced ) {
-		$module['advanced'] = $advanced;
-	}
-	return $module;
-}
-
-/**
- * Build a parsed-block array that WordPress' serialize_block() understands.
- */
+/** Parsed-block array for WordPress' serialize_block(). */
 function gl_d5_block( $name, array $attrs, array $inner = array() ) {
 	$attrs['builderVersion'] = gl_d5_version();
 	return array(
@@ -67,72 +50,7 @@ function gl_d5_block( $name, array $attrs, array $inner = array() ) {
 	);
 }
 
-function gl_d5_section( $label, $class, array $rows ) {
-	return gl_d5_block( 'divi/section', array( 'module' => gl_d5_module_attrs( $label, $class ) ), $rows );
-}
-
-/**
- * Divi 5 rows are flex rows: `flexColumnStructure` must name the column count,
- * and each column's width comes from its own `flexType` (see gl_d5_column()).
- *
- * @param string $structure Column layout, e.g. "1_3,2_3" (documentation only; widths live on the columns).
- */
-function gl_d5_row( $label, $class, $structure, array $columns ) {
-	unset( $structure );
-	return gl_d5_block(
-		'divi/row',
-		array(
-			'module' => gl_d5_module_attrs(
-				$label,
-				$class,
-				array( 'flexColumnStructure' => array( 'desktop' => array( 'value' => 'equal-columns_' . count( $columns ) ) ) )
-			),
-		),
-		$columns
-	);
-}
-
-/**
- * @param string $type Column width, e.g. "1_3", "2_3", "1_2", "4_4".
- */
-function gl_d5_column( $type, $class, array $modules ) {
-	list( $num, $den ) = array_map( 'intval', explode( '_', $type ) );
-	$flex              = (int) round( 24 * $num / max( 1, $den ) ) . '_24';
-	return gl_d5_block(
-		'divi/column',
-		array(
-			'module' => array_merge_recursive(
-				gl_d5_module_attrs( '', $class, array( 'type' => array( 'desktop' => array( 'value' => $type ) ) ) ),
-				array( 'decoration' => array( 'sizing' => array( 'desktop' => array( 'value' => array( 'flexType' => $flex ) ) ) ) )
-			),
-		),
-		$modules
-	);
-}
-
-function gl_d5_text( $label, $html, $class = '' ) {
-	return gl_d5_block(
-		'divi/text',
-		array(
-			'module'  => gl_d5_module_attrs( $label, $class ),
-			'content' => array( 'innerContent' => array( 'desktop' => array( 'value' => $html ) ) ),
-		)
-	);
-}
-
-function gl_d5_code( $label, $html, $class = '' ) {
-	return gl_d5_block(
-		'divi/code',
-		array(
-			'module'  => gl_d5_module_attrs( $label, $class ),
-			'content' => array( 'innerContent' => array( 'desktop' => array( 'value' => $html ) ) ),
-		)
-	);
-}
-
-/**
- * Serialize a list of sections into Divi 5 post_content.
- */
+/** Serialize sections into Divi 5 post_content. */
 function gl_d5_serialize( array $sections ) {
 	$out = '';
 	foreach ( $sections as $section ) {
@@ -141,37 +59,465 @@ function gl_d5_serialize( array $sections ) {
 	return "<!-- wp:divi/placeholder -->\n" . $out . "\n<!-- /wp:divi/placeholder -->";
 }
 
-/* -------------------------------------------------------------------------
- * Markup snippets (mirroring the original React components)
- * ---------------------------------------------------------------------- */
-
-/** "Box" component: dark card with optional image, title and content. */
-function gl_html_box( $title, $content, $image = '', $image_alt = '' ) {
-	$html = '<div class="gl-box">';
-	if ( $image ) {
-		$html .= '<img src="{{img:' . $image . '}}" alt="' . esc_attr( $image_alt ? $image_alt : $title ) . '" class="gl-box__image" />';
+/**
+ * Responsive value: {"desktop":{"value":…},"tablet":{"value":…},"phone":{"value":…}}.
+ * Pass null to leave a breakpoint unset. Extra states (hover/sticky) via $states.
+ */
+function gl_v( $desktop, $tablet = null, $phone = null, array $states = array() ) {
+	$out = array( 'desktop' => array( 'value' => $desktop ) + $states );
+	if ( null !== $tablet ) {
+		$out['tablet'] = array( 'value' => $tablet );
 	}
-	if ( '' !== $title ) {
-		$html .= '<h2 class="gl-box__title">' . $title . '</h2>';
+	if ( null !== $phone ) {
+		$out['phone'] = array( 'value' => $phone );
 	}
-	$html .= '<div class="gl-box__content">' . $content . '</div></div>';
-	return $html;
+	return $out;
 }
 
-/** "ImageSlider" component (initialised with slick by assets/js/site.js). */
-function gl_html_slider( array $images ) {
-	$html = '<div class="gl-slider">';
+/** module.meta / module.advanced.htmlAttributes. */
+function gl_meta( $label, $class = '' ) {
+	$m = array();
+	if ( $label ) {
+		$m['meta'] = array( 'adminLabel' => gl_v( $label ) );
+	}
+	if ( $class ) {
+		$m['advanced'] = array( 'htmlAttributes' => array( 'desktop' => array( 'value' => array( 'class' => $class ) ) ) );
+	}
+	return $m;
+}
+
+/* ---- decoration helpers ------------------------------------------------ */
+
+function gl_box4( $t, $r = null, $b = null, $l = null ) {
+	$r = null === $r ? $t : $r;
+	$b = null === $b ? $t : $b;
+	$l = null === $l ? $r : $l;
+	return array( 'top' => $t, 'right' => $r, 'bottom' => $b, 'left' => $l );
+}
+
+function gl_radius( $tl, $tr = null, $br = null, $bl = null ) {
+	$tr = null === $tr ? $tl : $tr;
+	$br = null === $br ? $tl : $br;
+	$bl = null === $bl ? $tl : $bl;
+	return array(
+		'topLeft'     => $tl,
+		'topRight'    => $tr,
+		'bottomRight' => $br,
+		'bottomLeft'  => $bl,
+		'sync'        => ( $tl === $tr && $tr === $br && $br === $bl ) ? 'on' : 'off',
+	);
+}
+
+/** Box shadow (style is required or Divi emits nothing). */
+function gl_shadow( $h, $v, $blur, $spread, $color ) {
+	return gl_v(
+		array(
+			'style'      => 'preset1',
+			'horizontal' => $h,
+			'vertical'   => $v,
+			'blur'       => $blur,
+			'spread'     => $spread,
+			'position'   => 'outer',
+			'color'      => $color,
+		)
+	);
+}
+
+function gl_text_shadow() {
+	return gl_v(
+		array(
+			'style'      => 'preset1',
+			'horizontal' => '3px',
+			'vertical'   => '4px',
+			'blur'       => '4.5px',
+			'color'      => 'rgba(0,0,0,0.5)',
+		)
+	);
+}
+
+/** Font value object. lineHeight "normal" matches the original (browser default). */
+function gl_font( $size, $color, $weight = '400', $align = null, array $extra = array() ) {
+	$f = array(
+		'size'       => $size,
+		'color'      => $color,
+		'weight'     => $weight,
+		'lineHeight' => 'normal',
+	);
+	if ( $align ) {
+		$f['textAlign'] = $align;
+	}
+	return $f + $extra;
+}
+
+/* =========================================================================
+ * Module builders
+ * ====================================================================== */
+
+function gl_section( $label, array $rows, array $deco = array(), $class = '' ) {
+	$module = gl_meta( $label, $class );
+	if ( $deco ) {
+		$module['decoration'] = $deco;
+	}
+	return gl_d5_block( 'divi/section', array( 'module' => $module ), $rows );
+}
+
+/** Standard content section: 1200px container, 6rem/2rem/2rem padding (7rem/2rem/1rem on phones). */
+function gl_page_section( $label, array $rows, $phone_padding = true ) {
+	return gl_section(
+		$label,
+		$rows,
+		array(
+			'background' => gl_v( array( 'color' => 'rgba(0,0,0,0)' ) ),
+			'spacing'    => gl_v(
+				array( 'padding' => gl_box4( '96px', '32px', '32px', '32px' ) ),
+				null,
+				$phone_padding ? array( 'padding' => gl_box4( '112px', '32px', '16px', '32px' ) ) : null
+			),
+		)
+	);
+}
+
+/**
+ * Row. $gap = column/row gap; $stack = stack columns on phones.
+ *
+ * @param array $columns  Column blocks.
+ * @param array $opts     margin_bottom, margin_top, gap, stack, class, layout (extra layout values).
+ */
+function gl_row( $label, array $columns, array $opts = array() ) {
+	$opts   = array_merge(
+		array(
+			'gap'           => '16px',
+			'margin_bottom' => '0px',
+			'margin_top'    => '0px',
+			'stack'         => true,
+			'class'         => '',
+			'layout'        => array(),
+			'max_width'     => '1136px',
+			'deco'          => array(),
+		),
+		$opts
+	);
+	$module = gl_meta( $label, $opts['class'] );
+
+	$module['advanced']['flexColumnStructure'] = gl_v( 'equal-columns_' . count( $columns ) );
+	$module['decoration']                      = array_replace_recursive(
+		array(
+			'layout'  => gl_v(
+				array_merge( array( 'flexWrap' => 'nowrap', 'columnGap' => $opts['gap'], 'rowGap' => $opts['gap'], 'alignItems' => 'stretch' ), $opts['layout'] ),
+				array( 'flexWrap' => 'nowrap' ),
+				array( 'flexWrap' => $opts['stack'] ? 'wrap' : 'nowrap' )
+			),
+			'sizing'  => gl_v( array( 'width' => '100%', 'maxWidth' => $opts['max_width'] ) ),
+			'spacing' => gl_v(
+				array(
+					'padding' => gl_box4( '0px' ),
+					'margin'  => array( 'top' => $opts['margin_top'], 'bottom' => $opts['margin_bottom'] ),
+				)
+			),
+		),
+		$opts['deco']
+	);
+	return gl_d5_block( 'divi/row', array( 'module' => $module ), $columns );
+}
+
+/**
+ * Column. $span is the desktop width in 24ths (8 = 1/3, 12 = 1/2, 16 = 2/3, 24 = full).
+ */
+function gl_col( $span, array $children, array $layout = array(), $class = '', $stack = true ) {
+	$module               = gl_meta( '', $class );
+	$module['decoration'] = array(
+		'sizing'  => gl_v(
+			array( 'flexType' => $span . '_24' ),
+			array( 'flexType' => $span . '_24' ),
+			array( 'flexType' => $stack ? '24_24' : $span . '_24' )
+		),
+		'spacing' => gl_v( array( 'padding' => gl_box4( '0px' ) ) ),
+	);
+	if ( $layout ) {
+		$module['decoration']['layout'] = gl_v( $layout );
+	}
+	return gl_d5_block( 'divi/column', array( 'module' => $module ), $children );
+}
+
+function gl_group( $label, array $children, array $deco = array(), $class = '' ) {
+	$module               = gl_meta( $label, $class );
+	$module['decoration'] = $deco;
+	return gl_d5_block( 'divi/group', array( 'module' => $module ), $children );
+}
+
+/**
+ * Heading module.
+ *
+ * @param array $font  gl_font() + headingLevel.
+ * @param array $deco  module.decoration.
+ */
+function gl_heading( $text, $level, array $font, array $deco = array(), $class = '', $shadow = false ) {
+	// Heading titles are plain text: store "&" not "&amp;".
+	$text  = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+	$title = array(
+		'innerContent' => gl_v( $text ),
+		'decoration'   => array( 'font' => array( 'font' => gl_v( $font + array( 'headingLevel' => $level ) ) ) ),
+	);
+	if ( $shadow ) {
+		$title['decoration']['font']['textShadow'] = gl_text_shadow();
+	}
+	$attrs = array(
+		'title'  => $title,
+		'module' => gl_meta( '', $class ) + ( $deco ? array( 'decoration' => $deco ) : array() ),
+	);
+	return gl_d5_block( 'divi/heading', $attrs );
+}
+
+/** Text module (rich text, raw HTML). */
+function gl_text( $label, $html, array $font, array $deco = array(), $class = '', array $content_deco = array() ) {
+	$content_deco = array_replace_recursive( array( 'bodyFont' => array( 'body' => array( 'font' => gl_v( $font ) ) ) ), $content_deco );
+	return gl_d5_block(
+		'divi/text',
+		array(
+			'module'  => gl_meta( $label, $class ) + ( $deco ? array( 'decoration' => $deco ) : array() ),
+			'content' => array(
+				'innerContent' => gl_v( $html ),
+				'decoration'   => $content_deco,
+			),
+		)
+	);
+}
+
+/**
+ * Image module.
+ *
+ * @param array $deco       module.decoration (sizing, border radius…).
+ * @param array $image_deco image.decoration (fit…).
+ */
+function gl_image( $file, $alt, array $deco = array(), array $image_deco = array(), $class = '', $label = '' ) {
+	$image = array( 'innerContent' => gl_v( array( 'src' => '{{img:' . $file . '}}', 'alt' => $alt ) ) );
+	if ( $image_deco ) {
+		$image['decoration'] = $image_deco;
+	}
+	return gl_d5_block(
+		'divi/image',
+		array(
+			'image'  => $image,
+			'module' => gl_meta( $label ? $label : $alt, $class ) + ( $deco ? array( 'decoration' => $deco ) : array() ),
+		)
+	);
+}
+
+function gl_video( $youtube_id, $label ) {
+	return gl_d5_block(
+		'divi/video',
+		array(
+			'video'  => array( 'innerContent' => gl_v( array( 'src' => 'https://www.youtube.com/watch?v=' . $youtube_id ) ) ),
+			'module' => gl_meta( $label ) + array( 'decoration' => array( 'sizing' => gl_v( array( 'width' => '100%' ) ) ) ),
+		)
+	);
+}
+
+function gl_code( $label, $html ) {
+	return gl_d5_block(
+		'divi/code',
+		array(
+			'module'  => gl_meta( $label ),
+			'content' => array( 'innerContent' => gl_v( $html ) ),
+		)
+	);
+}
+
+/**
+ * Slider of image slides (each slide = background image), 8px corners,
+ * same height as the original 750×412 images (scaled on smaller screens).
+ */
+function gl_slider( array $images ) {
+	$slides = array();
 	foreach ( $images as $i => $img ) {
-		$alt   = is_array( $img ) ? $img[1] : 'Slide ' . ( $i + 1 );
-		$file  = is_array( $img ) ? $img[0] : $img;
-		$html .= '<div><img src="{{img:' . $file . '}}" alt="' . esc_attr( $alt ) . '" /></div>';
+		$file     = is_array( $img ) ? $img[0] : $img;
+		$alt      = is_array( $img ) ? $img[1] : 'Slide ' . ( $i + 1 );
+		$slides[] = gl_d5_block(
+			'divi/slide',
+			array(
+				'module' => gl_meta( $alt ) + array(
+					'decoration' => array(
+						'background' => gl_v(
+							array(
+								'color' => '#000000',
+								'image' => array(
+									'url'      => '{{img:' . $file . '}}',
+									'size'     => 'cover',
+									'position' => 'center center',
+									'repeat'   => 'no-repeat',
+								),
+							)
+						),
+						'sizing'     => gl_v( array( 'minHeight' => '412px' ), array( 'minHeight' => '340px' ), array( 'minHeight' => '179px' ) ),
+						'spacing'    => gl_v( array( 'padding' => gl_box4( '0px' ) ) ),
+					),
+				),
+			)
+		);
 	}
-	return $html . '</div>';
+	return gl_d5_block(
+		'divi/slider',
+		array(
+			'module' => gl_meta( 'Image slider' ) + array(
+				'decoration' => array(
+					'border' => gl_v( array( 'radius' => gl_radius( '8px' ) ) ),
+					'sizing' => gl_v( array( 'width' => '100%' ) ),
+				),
+			),
+		),
+		$slides
+	);
 }
 
-/** "YouTubeVideo" component. */
-function gl_html_youtube( $id ) {
-	return '<div class="gl-video"><iframe width="100%" height="315" src="https://www.youtube.com/embed/' . esc_attr( $id ) . '" allowfullscreen=""></iframe><h4></h4></div>';
+/** Menu-driven links (one Link module looped over a WordPress menu). */
+function gl_menu_links( $menu_id, $menu_label, $font_desktop, $font_phone, $class ) {
+	$hover = isset( $font_desktop['hover'] ) ? $font_desktop['hover'] : null;
+	unset( $font_desktop['hover'] );
+	$var = function ( $name ) {
+		return '$variable({"type":"content","value":{"name":"' . $name . '","settings":{"before":"","after":"","loop_position":""}}})$';
+	};
+	return gl_d5_block(
+		'divi/link',
+		array(
+			'module'  => array_replace_recursive(
+				gl_meta( 'Menu links (Appearance > Menus)', $class ),
+				array(
+					'advanced'   => array(
+						'loop' => gl_v(
+							array(
+								'enable'                       => 'on',
+								'loopId'                       => 'loop-gl' . substr( md5( $class . $menu_id ), 0, 8 ),
+								'queryType'                    => 'menus',
+								'orderBy'                      => 'menu_order',
+								'subTypes'                     => array( array( 'value' => (string) $menu_id, 'label' => $menu_label ) ),
+								'includePostWithSpecificTerms' => '',
+								'excludePostWithSpecificTerms' => '',
+								'includeSpecificPosts'         => '',
+								'excludeSpecificPosts'         => '',
+							)
+						),
+					),
+					'decoration' => array(
+						'sizing' => gl_v( array( 'size' => array( 'flexShrink' ) ) ),
+						'layout' => gl_v( array( 'justifyContent' => 'start', 'alignItems' => 'center' ) ),
+					),
+				)
+			),
+			'content' => array(
+				'innerContent' => gl_v(
+					array(
+						'text'       => $var( 'loop_menu_text' ),
+						'linkUrl'    => $var( 'loop_menu_link' ),
+						'linkTarget' => 'off',
+					)
+				),
+				'decoration'   => array( 'font' => array( 'font' => gl_v( $font_desktop, null, $font_phone, $hover ? array( 'hover' => array( 'color' => $hover ) ) : array() ) ) ),
+			),
+		)
+	);
+}
+
+/* =========================================================================
+ * Shared components (mirror the original React components)
+ * ====================================================================== */
+
+/** Space a block of rich text the way the original's <p> margins did (1em). */
+function gl_body_deco() {
+	return array( 'bodyFont' => array( 'body' => array( 'list' => gl_v( array( 'paragraphSpacing' => '16px' ) ) ) ) );
+}
+
+/**
+ * The original "Box": dark card with optional image, a title with an underline,
+ * and light-grey content. Built as a Group so it stays one movable unit.
+ */
+function gl_box( $title, $html = '', $image = '', array $opts = array() ) {
+	$opts     = array_merge( array( 'align' => null, 'grow' => true ), $opts );
+	$children = array();
+
+	if ( $image ) {
+		$children[] = gl_image(
+			$image,
+			wp_strip_all_tags( $title ),
+			array(
+				'sizing' => gl_v( array( 'width' => '100%', 'height' => '200px' ) ),
+				'border' => gl_v( array( 'radius' => gl_radius( '8px', '8px', '0px', '0px' ) ) ),
+			),
+			array( 'fit' => gl_v( array( 'objectFit' => 'cover', 'objectPosition' => 'center center' ) ) )
+		);
+	}
+
+	if ( '' !== $title ) {
+		$children[] = gl_heading(
+			$title,
+			'h2',
+			gl_font( '24px', '#e6e6e6', '700', $opts['align'] ),
+			array(
+				'spacing' => gl_v(
+					array(
+						'margin'  => array( 'top' => '19.92px', 'bottom' => '16px' ),
+						'padding' => array( 'top' => '0px', 'bottom' => '8px' ),
+					)
+				),
+				'border'  => gl_v( array( 'styles' => array( 'bottom' => array( 'width' => '2px', 'color' => '#555555', 'style' => 'solid' ) ) ) ),
+			)
+		);
+	}
+
+	if ( '' !== $html ) {
+		$children[] = gl_text(
+			'Content',
+			$html,
+			gl_font( '16px', '#cccccc', '400', $opts['align'] ),
+			array( 'spacing' => gl_v( array( 'padding' => gl_box4( '16px', '0px' ) ) ) ),
+			'',
+			gl_body_deco() + array(
+				'headingFont' => array(
+					'h2' => array( 'font' => gl_v( gl_font( '24px', '#cccccc', '700' ) ) ),
+				),
+			)
+		);
+	}
+
+	$deco = array(
+		'background' => gl_v( array( 'color' => '#333333' ) ),
+		'spacing'    => gl_v( array( 'padding' => gl_box4( '16px' ) ) ),
+		'border'     => gl_v(
+			array(
+				'styles' => array( 'all' => array( 'width' => '1px', 'color' => '#444444', 'style' => 'solid' ) ),
+				'radius' => gl_radius( '8px' ),
+			)
+		),
+		'boxShadow'  => gl_shadow( '0px', '4px', '8px', '0px', 'rgba(0,0,0,0.2)' ),
+		'layout'     => gl_v( array( 'flexDirection' => 'column', 'alignItems' => 'stretch' ) ),
+	);
+	if ( $opts['grow'] ) {
+		$deco['sizing'] = gl_v( array( 'size' => array( 'flexGrow' ), 'width' => '100%' ) );
+	}
+
+	return gl_group( wp_strip_all_tags( $title ? $title : 'Box' ), $children, $deco );
+}
+
+/** Page heading in off-white (#fbf7f5), centered. */
+function gl_section_title( $text, $level = 'h2', $margin_top = '0px', $margin_bottom = '32px' ) {
+	$size = 'h1' === $level ? '32px' : '24px';
+	return gl_heading(
+		$text,
+		$level,
+		gl_font( $size, '#fbf7f5', '700', 'center' ),
+		array( 'spacing' => gl_v( array( 'margin' => array( 'top' => $margin_top, 'bottom' => $margin_bottom ) ) ) )
+	);
+}
+
+/** Top row used on About/Prices/Products/Profiles: box on the left, slider on the right. */
+function gl_top_row_with_slider( $box_title, $box_html, array $slides ) {
+	return gl_row(
+		'Top',
+		array(
+			gl_col( 8, array( gl_box( $box_title, $box_html ) ) ),
+			gl_col( 16, array( gl_slider( $slides ) ) ),
+		),
+		array( 'margin_bottom' => '32px' )
+	);
 }
 
 /** Paragraph list helper. */
@@ -179,22 +525,48 @@ function gl_html_ps( array $lines ) {
 	return '<p>' . implode( '</p><p>', $lines ) . '</p>';
 }
 
-/** Standard page top row: box on the left, slider on the right. */
-function gl_top_row_with_slider( $box_title, $box_content, array $slides ) {
-	return gl_d5_row(
-		'Top',
-		'gl-row gl-row--top',
-		'1_3,2_3',
+/**
+ * Image card with a hover overlay (dark tint + centered text), used for the
+ * team and news grids. $link (optional) opens in the lightbox.
+ */
+function gl_hover_card( $file, $alt, $overlay_html, $link = '', array $image_deco = array() ) {
+	if ( $link ) {
+		$overlay_html = '<a href="{{img:' . $link . '}}" class="gl-lightbox">' . $overlay_html . '</a>';
+	}
+	return gl_group(
+		$alt,
 		array(
-			gl_d5_column( '1_3', 'gl-col gl-col--box', array( gl_d5_text( $box_title, gl_html_box( $box_title, $box_content ) ) ) ),
-			gl_d5_column( '2_3', 'gl-col gl-col--slider', array( gl_d5_text( 'Image slider', gl_html_slider( $slides ) ) ) ),
-		)
+			gl_image( $file, $alt, array_replace_recursive( array( 'sizing' => gl_v( array( 'width' => '100%' ) ) ), $image_deco ) ),
+			gl_text(
+				'Hover text',
+				$overlay_html,
+				gl_font( '16px', '#fbf7f5', '400', 'center' ),
+				array(),
+				'gl-hover-overlay',
+				array( 'headingFont' => array( 'h3' => array( 'font' => gl_v( gl_font( '18.72px', '#fbf7f5', '700', 'center' ) ) ) ) )
+			),
+		),
+		array( 'sizing' => gl_v( array( 'width' => '100%' ) ) ),
+		'gl-hover-card'
 	);
 }
 
-/* -------------------------------------------------------------------------
+/** Grid of items as rows of three columns. */
+function gl_grid_rows( $label, array $cells, $gap = '16px', $stack = true ) {
+	$rows = array();
+	foreach ( array_chunk( $cells, 3 ) as $n => $chunk ) {
+		$cols = array();
+		for ( $i = 0; $i < 3; $i++ ) {
+			$cols[] = gl_col( 8, isset( $chunk[ $i ] ) ? array( $chunk[ $i ] ) : array(), array(), '', $stack );
+		}
+		$rows[] = gl_row( $label . ' ' . ( $n + 1 ), $cols, array( 'gap' => $gap, 'margin_bottom' => $gap, 'stack' => $stack ) );
+	}
+	return $rows;
+}
+
+/* =========================================================================
  * Pages
- * ---------------------------------------------------------------------- */
+ * ====================================================================== */
 
 /**
  * The seven pages, keyed by slug, in menu order.
@@ -214,19 +586,62 @@ function gl_page_definitions() {
 }
 
 function gl_page_home() {
-	$hero = '<div class="gl-hero" style="background-image:url({{img:stockbarberimage.jpg}})">'
-		. '<div class="gl-hero__slogan">WHERE TRADITION MEETS TREND</div>'
-		. '<div class="gl-hero__title">GIACOMO LICATA</div>'
-		. '<div class="gl-hero__sub">Est. 1986</div>'
-		. '<div class="gl-hero__address">374 FILTON AVENUE, HORFIELD, BRISTOL, BS7 0BE</div>'
-		. '<div class="gl-hero__address">0117 923 6663</div>'
-		. '</div>';
+	$line = function ( $text, $level, $size, $phone ) {
+		return gl_heading(
+			$text,
+			$level,
+			gl_font( $size, '#ffffff', '800', 'center' ),
+			array(
+				'spacing' => gl_v( array( 'margin' => gl_box4( '0px' ), 'padding' => gl_box4( '0px' ) ) ),
+			),
+			'',
+			true
+		);
+	};
+
+	$modules = array(
+		$line( 'WHERE TRADITION MEETS TREND', 'h2', '36px', '18px' ),
+		$line( 'GIACOMO LICATA', 'h1', '128px', '64px' ),
+		$line( 'Est. 1986', 'h2', '64px', '32px' ),
+		$line( '374 FILTON AVENUE, HORFIELD, BRISTOL, BS7 0BE', 'h3', '36px', '18px' ),
+		$line( '0117 923 6663', 'h3', '36px', '18px' ),
+	);
+	// Phone font sizes.
+	$phone = array( '18px', '64px', '32px', '18px', '18px' );
+	foreach ( $modules as $i => &$m ) {
+		$m['attrs']['title']['decoration']['font']['font']['phone'] = array( 'value' => array( 'size' => $phone[ $i ], 'textAlign' => 'center' ) );
+	}
+	unset( $m );
 
 	return array(
-		gl_d5_section(
+		gl_section(
 			'Hero',
-			'gl-hero-section',
-			array( gl_d5_row( 'Hero', 'gl-row gl-row--full', '4_4', array( gl_d5_column( '4_4', 'gl-col', array( gl_d5_text( 'Hero', $hero ) ) ) ) ) )
+			array(
+				gl_row(
+					'Hero',
+					array( gl_col( 24, $modules, array( 'flexDirection' => 'column', 'justifyContent' => 'center', 'alignItems' => 'center', 'rowGap' => '0px' ) ) ),
+					array(
+						'max_width' => '100%',
+						'gap'       => '0px',
+						'deco'      => array( 'sizing' => gl_v( array( 'minHeight' => '100vh' ) ) ),
+					)
+				),
+			),
+			array(
+				'background' => gl_v(
+					array(
+						'color' => '#242424',
+						'image' => array(
+							'url'      => '{{img:stockbarberimage.jpg}}',
+							'size'     => 'cover',
+							'position' => 'center center',
+							'repeat'   => 'no-repeat',
+						),
+					)
+				),
+				'spacing'    => gl_v( array( 'padding' => gl_box4( '0px' ) ) ),
+				'sizing'     => gl_v( array( 'minHeight' => '100vh' ) ),
+			)
 		),
 	);
 }
@@ -242,8 +657,7 @@ function gl_page_about() {
 			'No Appointment Needed',
 		)
 	);
-
-	$help = gl_html_ps(
+	$help     = gl_html_ps(
 		array(
 			'We do wash hair at Giacomos and there is a small extra price to pay. Clean hair makes cutting and creating your style easier for us and gives you a better finish to your cut. If you do not want a wash we kindly ask that you wash any gel, wax or spray from your hair before you visit us.',
 			'When washing the wax from your hair put the shampoo on your hair before you get it wet, get a good lather and then wash as normal.',
@@ -252,30 +666,34 @@ function gl_page_about() {
 	$customer = gl_html_ps( array( 'If you need a particular job done we are full of useful information. We talk to our clients and know their backgrounds, from local tradesmen to financial advisors. That leaky pipe, decorating, garden renovations&#8230; the list is endless. Just ask!' ) );
 	$styles   = gl_html_ps( array( 'It may be the traditional gents short back and sides, flat top, mohawk, wedge, boston, spikey, shaved pattern, long layered cut, short layered cut or something else unique to you, whatever your style we can be of service!' ) );
 
+	$video_box = function ( $title, $id ) {
+		$box = gl_box( $title );
+		// Box = group(heading); add the Video module under the heading.
+		$box['innerBlocks'][]  = gl_video( $id, 'Video: ' . $title );
+		$box['innerContent'][] = null;
+		return $box;
+	};
+
 	return array(
-		gl_d5_section(
+		gl_page_section(
 			'About',
-			'gl-page',
 			array(
 				gl_top_row_with_slider( 'Opening Times', $opening, array( 'aboutimage1.jpg', 'aboutimage2.jpg' ) ),
-				gl_d5_row(
+				gl_row(
 					'Info boxes',
-					'gl-row gl-row--three',
-					'1_3,1_3,1_3',
 					array(
-						gl_d5_column( '1_3', 'gl-col gl-col--box', array( gl_d5_text( 'Help us help you', gl_html_box( 'Help us help you', $help, 'hair-wash.jpg' ) ) ) ),
-						gl_d5_column( '1_3', 'gl-col gl-col--box', array( gl_d5_text( 'Helping the Customer', gl_html_box( 'Helping the Customer', $customer, 'helping-customer.jpg' ) ) ) ),
-						gl_d5_column( '1_3', 'gl-col gl-col--box', array( gl_d5_text( 'Styles', gl_html_box( 'Styles', $styles, 'styles.jpg' ) ) ) ),
+						gl_col( 8, array( gl_box( 'Help us help you', $help, 'hair-wash.jpg' ) ) ),
+						gl_col( 8, array( gl_box( 'Helping the Customer', $customer, 'helping-customer.jpg' ) ) ),
+						gl_col( 8, array( gl_box( 'Styles', $styles, 'styles.jpg' ) ) ),
 					)
 				),
-				gl_d5_row(
+				gl_row(
 					'Videos',
-					'gl-row gl-row--videos',
-					'1_2,1_2',
 					array(
-						gl_d5_column( '1_2', 'gl-col gl-col--box', array( gl_d5_code( 'Video: I know what you did this summer', gl_html_box( 'I know what you did this summer', gl_html_youtube( '_4s2QAaKvlo' ) ) ) ) ),
-						gl_d5_column( '1_2', 'gl-col gl-col--box', array( gl_d5_code( 'Video: Barber Shop Bristol', gl_html_box( 'Giacomo Licata Barber Shop Bristol', gl_html_youtube( '8tXIz-b66aY' ) ) ) ) ),
-					)
+						gl_col( 12, array( $video_box( 'I know what you did this summer', '_4s2QAaKvlo' ) ) ),
+						gl_col( 12, array( $video_box( 'Giacomo Licata Barber Shop Bristol', '8tXIz-b66aY' ) ) ),
+					),
+					array( 'margin_top' => '32px' )
 				),
 			)
 		),
@@ -283,7 +701,7 @@ function gl_page_about() {
 }
 
 function gl_page_prices() {
-	$prices = '<div>' . gl_html_ps(
+	$prices = gl_html_ps(
 		array(
 			'Men\'s Haircut - &#163;14.00',
 			'Skin-Fade - &#163;16.50',
@@ -295,20 +713,15 @@ function gl_page_prices() {
 			'Shave - &#163;16.50',
 			'Restyling - &#163;16.50',
 			'Beard Trim - &#163;6.00',
-		)
-	) . '<p class="gl-bold">Ear Piercing</p>' . gl_html_ps(
-		array(
+			'<strong>Ear Piercing</strong>',
 			'1 Ear - &#163;20.00',
 			'2 Ears - &#163;35.00',
-		)
-	) . '<p class="gl-bold">CASH ONLY</p>' . gl_html_ps(
-		array(
+			'<strong>CASH ONLY</strong>',
 			'All prices are subject to change depending on length &amp; style required',
 			'*OAP haircuts Mon - Thurs',
 			'**Cut throat shaves are by appointment only please',
 		)
-	) . '</div>';
-
+	);
 	$services = gl_html_ps(
 		array(
 			'As well as gentlemen\'s haircuts we are pleased to offer ear piercing for men and women, or when England play football why not have St Georges cross painted on your head, but don\'t worry, it will wash off!',
@@ -319,28 +732,22 @@ function gl_page_prices() {
 	$special  = gl_html_ps( array( 'Special bookings can be made for weddings, stag do\'s, birthday\'s and special occassions. For more information contact Giacomo on 0117 923 6663.' ) );
 
 	return array(
-		gl_d5_section(
+		gl_page_section(
 			'Prices',
-			'gl-page',
 			array(
 				gl_top_row_with_slider(
 					'Aftershave &amp; Toiletries',
 					'<p>We now stock a wide range of Proraso Aftershare &amp; Toiletries, please click here for more information</p>',
 					array( 'pricesImage1.png', 'pricesImage2.png' )
 				),
-				gl_d5_row(
+				gl_row(
 					'Prices & services',
-					'gl-row gl-row--bottom',
-					'1_2,1_2',
 					array(
-						gl_d5_column( '1_2', 'gl-col gl-col--box', array( gl_d5_text( 'Prices', gl_html_box( 'Prices', $prices ) ) ) ),
-						gl_d5_column(
-							'1_2',
-							'gl-col gl-col--stack',
-							array(
-								gl_d5_text( 'Services', gl_html_box( 'Services', $services ) ),
-								gl_d5_text( 'Special Occasions', gl_html_box( 'Special Occasions', $special ) ),
-							)
+						gl_col( 12, array( gl_box( 'Prices', $prices ) ) ),
+						gl_col(
+							12,
+							array( gl_box( 'Services', $services ), gl_box( 'Special Occasions', $special ) ),
+							array( 'flexDirection' => 'column', 'rowGap' => '16px' )
 						),
 					)
 				),
@@ -372,65 +779,104 @@ function gl_page_products() {
 		array( 'RedOneRedResize.jpg', 'Hair Wax - Red', '&#163;10.00' ),
 	);
 
-	$grid = '<div class="gl-products">';
+	$cells = array();
 	foreach ( $products as $i => $p ) {
-		$grid .= '<div class="gl-product"><img src="{{img:' . $p[0] . '}}" alt="Product ' . ( $i + 1 ) . '" /><h3>' . $p[1] . '</h3><p>' . $p[2] . '</p></div>';
+		$cells[] = gl_group(
+			wp_strip_all_tags( $p[1] ),
+			array(
+				gl_image(
+					$p[0],
+					'Product ' . ( $i + 1 ),
+					array(
+						'sizing' => gl_v( array( 'width' => '100%', 'height' => '250px' ) ),
+						'border' => gl_v( array( 'radius' => gl_radius( '8px' ) ) ),
+					),
+					array( 'fit' => gl_v( array( 'objectFit' => 'fill' ) ) )
+				),
+				gl_heading( $p[1], 'h3', gl_font( '18.72px', '#fbf7f5', '700', 'center' ), array( 'spacing' => gl_v( array( 'margin' => array( 'top' => '8px', 'bottom' => '0px' ) ) ) ) ),
+				gl_text( 'Price', '<p>' . $p[2] . '</p>', gl_font( '16px', '#fbf7f5', '400', 'center' ) ),
+			),
+			array(
+				'sizing' => gl_v( array( 'width' => '100%' ) ),
+				'layout' => gl_v( array( 'flexDirection' => 'column', 'rowGap' => '0px' ) ),
+			)
+		);
 	}
-	$grid .= '</div>';
 
 	return array(
-		gl_d5_section(
+		gl_page_section(
 			'Products',
-			'gl-page',
-			array(
-				gl_top_row_with_slider(
-					'Our Premium Products',
-					'<p>Explore our range of premium products including aftershaves, toiletries, and more. Click on any product to learn more.</p>',
-					array( array( 'productsImage1.png', 'Proraso' ), array( 'redone2-bckgroundremoved.png', 'Product 2' ) )
+			array_merge(
+				array(
+					gl_top_row_with_slider(
+						'Our Premium Products',
+						'<p>Explore our range of premium products including aftershaves, toiletries, and more. Click on any product to learn more.</p>',
+						array( array( 'productsImage1.png', 'Proraso' ), array( 'redone2-bckgroundremoved.png', 'Product 2' ) )
+					),
+					gl_row( 'Heading', array( gl_col( 24, array( gl_section_title( 'OUR PRODUCTS' ) ) ) ) ),
 				),
-				gl_d5_row(
-					'Products grid',
-					'gl-row gl-row--full',
-					'4_4',
-					array(
-						gl_d5_column(
-							'4_4',
-							'gl-col',
-							array(
-								gl_d5_text( 'Heading', '<h2 class="gl-section-title gl-section-title--first">OUR PRODUCTS</h2>' ),
-								gl_d5_text( 'Products', $grid ),
-							)
-						),
-					)
-				),
+				gl_grid_rows( 'Products', $cells )
 			)
 		),
 	);
 }
 
 function gl_page_location() {
-	$address = '<div>' . gl_html_ps( array( '374 Filton Avenue, Horfield, Bristol BS7 0BE', 'Telephone: 0117 923 6663' ) ) . '</div>'
-		. '<div><h2>Opening Times</h2>' . gl_html_ps( array( 'Mon-Fri: 9am - 7pm', 'Sat: 9am - 5pm', 'Sun: Closed' ) ) . '</div>';
+	$address = '<p>374 Filton Avenue, Horfield, Bristol BS7 0BE</p><p>Telephone: 0117 923 6663</p>'
+		. '<h2>Opening Times</h2>' . gl_html_ps( array( 'Mon-Fri: 9am - 7pm', 'Sat: 9am - 5pm', 'Sun: Closed' ) );
 
-	$image = '<img src="{{img:outside-shop.png}}" alt="Barbershop" class="gl-location__image" />';
+	$photo = gl_group(
+		'Shop photo',
+		array(
+			gl_image(
+				'outside-shop.png',
+				'Barbershop',
+				array(
+					'sizing' => gl_v( array( 'width' => '100%' ) ),
+					'border' => gl_v( array( 'radius' => gl_radius( '8px' ) ) ),
+				)
+			),
+		),
+		array(
+			'background' => gl_v( array( 'color' => '#333333' ) ),
+			'spacing'    => gl_v( array( 'padding' => gl_box4( '16px' ) ) ),
+			'border'     => gl_v(
+				array(
+					'styles' => array( 'all' => array( 'width' => '1px', 'color' => '#444444', 'style' => 'solid' ) ),
+					'radius' => gl_radius( '8px' ),
+				)
+			),
+			'boxShadow'  => gl_shadow( '0px', '4px', '8px', '0px', 'rgba(0,0,0,0.2)' ),
+			'sizing'     => gl_v( array( 'size' => array( 'flexGrow' ), 'width' => '100%' ) ),
+		)
+	);
 
-	$map = '<div class="gl-map"><h1>FIND US ON MAPS</h1><iframe class="gl-map__iframe" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2483.999317481905!2d-2.576987623075407!3d51.49488001161741!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x487191dd79204213%3A0xc3b41a8c31805052!2sGiacomo%20Licata!5e0!3m2!1sen!2suk!4v1720784502194!5m2!1sen!2suk" allowfullscreen="" aria-hidden="false" tabindex="0"></iframe></div>';
+	$map = '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2483.999317481905!2d-2.576987623075407!3d51.49488001161741!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x487191dd79204213%3A0xc3b41a8c31805052!2sGiacomo%20Licata!5e0!3m2!1sen!2suk!4v1720784502194!5m2!1sen!2suk" style="width:100%;height:450px;border:0;border-radius:8px;" allowfullscreen="" loading="lazy" title="Giacomo Licata on Google Maps"></iframe>';
 
 	return array(
-		gl_d5_section(
+		gl_page_section(
 			'Location',
-			'gl-page',
 			array(
-				gl_d5_row(
+				gl_row(
 					'Top',
-					'gl-row gl-row--top',
-					'1_2,1_2',
 					array(
-						gl_d5_column( '1_2', 'gl-col gl-col--box', array( gl_d5_text( 'Address', gl_html_box( 'Address', $address ) ) ) ),
-						gl_d5_column( '1_2', 'gl-col gl-col--box', array( gl_d5_text( 'Shop photo', gl_html_box( '', $image ) ) ) ),
+						gl_col( 12, array( gl_box( 'Address', $address ) ) ),
+						gl_col( 12, array( $photo ) ),
+					),
+					array( 'margin_bottom' => '32px' )
+				),
+				gl_row(
+					'Map',
+					array(
+						gl_col(
+							24,
+							array(
+								gl_section_title( 'FIND US ON MAPS', 'h1', '0px', '21.44px' ),
+								gl_code( 'Google map (embed)', $map ),
+							)
+						),
 					)
 				),
-				gl_d5_row( 'Map', 'gl-row gl-row--full', '4_4', array( gl_d5_column( '4_4', 'gl-col', array( gl_d5_code( 'Google map', $map ) ) ) ) ),
 			)
 		),
 	);
@@ -444,52 +890,36 @@ function gl_page_profiles() {
 		array( 'Alec', 'Barber', 'alec-sm.png' ),
 		array( 'Gavin', 'Barber', 'gavin_sm.png' ),
 	);
+	// Rounded outer corners of the grid, as in the original.
+	$corners = array(
+		0 => gl_radius( '8px', '0px', '0px', '0px' ),
+		2 => gl_radius( '0px', '8px', '0px', '0px' ),
+		3 => gl_radius( '0px', '0px', '0px', '8px' ),
+		5 => gl_radius( '0px', '0px', '8px', '0px' ),
+	);
 
-	$grid = '<div class="gl-team">';
-	foreach ( $staff as $s ) {
-		$grid .= '<div class="gl-team__item"><img src="{{img:' . $s[2] . '}}" alt="' . $s[0] . '" /><div class="gl-overlay"><h3>' . $s[1] . '</h3><p>' . $s[0] . '</p></div></div>';
+	$cells = array();
+	foreach ( $staff as $i => $s ) {
+		$radius  = isset( $corners[ $i ] ) ? array( 'border' => gl_v( array( 'radius' => $corners[ $i ] ) ) ) : array();
+		$cells[] = gl_hover_card( $s[2], $s[0], '<h3>' . $s[1] . '</h3><p>' . $s[0] . '</p>', '', $radius );
 	}
-	$grid .= '</div>';
 
 	return array(
-		gl_d5_section(
+		gl_page_section(
 			'Profiles',
-			'gl-page',
-			array(
-				gl_top_row_with_slider(
-					'Aftershave &amp; Toiletries',
-					'<p>We now stock a wide range of Proraso Aftershave &amp; Toiletries. Please click here for more information.</p>',
-					array( 'profileImage1.png', 'profileImage2.png' )
+			array_merge(
+				array(
+					gl_top_row_with_slider(
+						'Aftershave &amp; Toiletries',
+						'<p>We now stock a wide range of Proraso Aftershave &amp; Toiletries. Please click here for more information.</p>',
+						array( 'profileImage1.png', 'profileImage2.png' )
+					),
+					gl_row( 'Heading', array( gl_col( 24, array( gl_section_title( 'MEET THE TEAM', 'h1' ) ) ) ) ),
 				),
-				gl_d5_row(
-					'Meet the team',
-					'gl-row gl-row--full',
-					'4_4',
-					array(
-						gl_d5_column(
-							'4_4',
-							'gl-col',
-							array(
-								gl_d5_text( 'Heading', '<h1 class="gl-team-title">MEET THE TEAM</h1>' ),
-								gl_d5_text( 'Team', $grid ),
-							)
-						),
-					)
-				),
+				gl_grid_rows( 'Team', $cells, '0px', false )
 			)
 		),
 	);
-}
-
-/** Lightbox gallery grid used on the News page. */
-function gl_html_gallery( array $items ) {
-	$html = '<div class="gl-gallery">';
-	foreach ( $items as $i => $item ) {
-		$html .= '<a class="gl-gallery__item" href="{{img:' . $item[1] . '}}" data-gl-lightbox="1">'
-			. '<img src="{{img:' . $item[0] . '}}" alt="' . esc_attr( $item[3] . ' ' . ( $i + 1 ) ) . '" />'
-			. '<div class="gl-overlay"><h3>' . $item[2] . '</h3></div></a>';
-	}
-	return $html . '</div>';
 }
 
 function gl_page_news() {
@@ -522,11 +952,6 @@ function gl_page_news() {
 		array( '8.jpg', '8-l.jpg', 'Rivals\' bet carries a lifetime penalty' ),
 		array( '9.jpg', '9-l.jpg', 'Giacomo Licata, Lee Haskins &amp; Former Mayor of Bristol' ),
 	);
-	foreach ( $news as &$n ) {
-		$n[] = 'News';
-	}
-	unset( $n );
-
 	$collection = array(
 		array( 'collection1.jpg', 'collection1.jpg', 'Giacomo\'s Collection' ),
 		array( 'collection2.jpg', 'collection2.jpg', 'Shirt signed by the Scottish Rugby Team' ),
@@ -536,60 +961,167 @@ function gl_page_news() {
 		array( 'collection6.jpg', 'collection6.jpg', 'Shirt signed by the Welsh Rugby Team' ),
 		array( 'collection7.jpg', 'collection7.jpg', 'Giac &amp; Lee Haskins with his belt' ),
 	);
-	foreach ( $collection as &$c ) {
-		$c[] = 'Collection';
-	}
-	unset( $c );
+
+	$cards = function ( array $items, $prefix ) {
+		$cells = array();
+		foreach ( $items as $i => $item ) {
+			$cells[] = gl_hover_card(
+				$item[0],
+				$prefix . ' ' . ( $i + 1 ),
+				'<h3>' . $item[2] . '</h3>',
+				$item[1],
+				array( 'border' => gl_v( array( 'radius' => gl_radius( '8px' ) ) ) )
+			);
+		}
+		return $cells;
+	};
+
+	$video = gl_video( '4bVZKPoG5Fc', 'World record video' );
 
 	return array(
-		gl_d5_section(
+		gl_page_section(
 			'News',
-			'gl-page gl-page--news',
+			array_merge(
+				array(
+					gl_row(
+						'Top',
+						array(
+							gl_col( 8, array( gl_box( 'GIACOMO LICATA SETS WORLD RECORD FOR HIGHEST HAIRCUT', '', '', array( 'align' => 'center' ) ) ) ),
+							gl_col( 16, array( $video ), array( 'flexDirection' => 'column', 'justifyContent' => 'center' ) ),
+						),
+						array( 'margin_bottom' => '32px' )
+					),
+					gl_row( 'Heading: In the news', array( gl_col( 24, array( gl_section_title( 'IN THE NEWS' ) ) ) ) ),
+				),
+				gl_grid_rows( 'News', $cards( $news, 'News' ), '16px', false ),
+				array( gl_row( 'Heading: Collection', array( gl_col( 24, array( gl_section_title( 'GIAC\'S COLLECTION', 'h2', '16px' ) ) ) ) ) ),
+				gl_grid_rows( 'Collection', $cards( $collection, 'Collection' ), '16px', false )
+			),
+			false
+		),
+	);
+}
+
+/* =========================================================================
+ * Theme Builder: Global Header + Global Footer
+ * ====================================================================== */
+
+/**
+ * Header: logo left, menu right; fixed over the page, transparent until the
+ * page scrolls (class gl-header – see site.css/site.js).
+ */
+function gl_layout_header( $menu_id ) {
+	$nav_font = array(
+		'size'       => '16px',
+		'color'      => '#ffffff',
+		'weight'     => '800',
+		'lineHeight' => 'normal',
+	);
+
+	return array(
+		gl_section(
+			'Header',
 			array(
-				gl_d5_row(
-					'Top',
-					'gl-row gl-row--top',
-					'1_3,2_3',
+				gl_row(
+					'Header bar',
 					array(
-						gl_d5_column( '1_3', 'gl-col gl-col--box', array( gl_d5_text( 'World record', gl_html_box( 'GIACOMO LICATA SETS WORLD RECORD FOR HIGHEST HAIRCUT', '' ) ) ) ),
-						gl_d5_column( '2_3', 'gl-col gl-col--video', array( gl_d5_code( 'World record video', '<div class="gl-videobox">' . gl_html_youtube( '4bVZKPoG5Fc' ) . '</div>' ) ) ),
+						gl_col(
+							12,
+							array( gl_image( 'giac-logo.png', 'Giacomo Licata Logo', array( 'sizing' => gl_v( array( 'width' => 'auto', 'maxWidth' => '200px' ) ) ) ) ),
+							array( 'justifyContent' => 'center', 'alignItems' => 'flex-start' )
+						),
+						gl_col(
+							12,
+							array( gl_menu_links( $menu_id, 'Giacomo Licata Menu', $nav_font, array( 'size' => '12px' ), 'gl-nav-item' ) ),
+							array( 'flexDirection' => 'row', 'flexWrap' => 'wrap', 'justifyContent' => 'flex-end', 'alignItems' => 'center', 'columnGap' => '20px' ),
+							'gl-header-nav'
+						),
+					),
+					array(
+						'max_width' => '100%',
+						'gap'       => '0px',
+						'layout'    => array( 'justifyContent' => 'space-between', 'alignItems' => 'center' ),
 					)
 				),
-				gl_d5_row(
-					'In the news',
-					'gl-row gl-row--full',
-					'4_4',
+			),
+			array(
+				'background' => gl_v( array( 'color' => 'rgba(0,0,0,0)' ) ),
+				'spacing'    => gl_v( array( 'padding' => gl_box4( '10px', '20px' ) ) ),
+				'border'     => gl_v( array( 'styles' => array( 'bottom' => array( 'width' => '1px', 'color' => '#d9d9d9', 'style' => 'solid' ) ) ) ),
+			),
+			'gl-header'
+		),
+	);
+}
+
+/** Footer: credit line, then a dark bar with logo / menu / social icons. */
+function gl_layout_footer( $menu_id ) {
+	$social = '';
+	foreach ( gl_social_links() as $s ) {
+		$social .= '<a href="' . esc_url( $s['url'] ) . '"><img src="{{theme:' . $s['icon'] . '}}" alt="' . esc_attr( $s['label'] ) . '" width="24" height="24" /></a>';
+	}
+
+	$nav_font = array(
+		'size'       => '16px',
+		'color'      => '#ffffff',
+		'weight'     => '800',
+		'lineHeight' => 'normal',
+		'hover'      => '#996e52',
+	);
+	$center   = array( 'flexDirection' => 'row', 'flexWrap' => 'wrap', 'justifyContent' => 'center', 'alignItems' => 'center', 'columnGap' => '20px' );
+
+	return array(
+		gl_section(
+			'Footer',
+			array(
+				gl_row(
+					'Credit',
 					array(
-						gl_d5_column(
-							'4_4',
-							'gl-col',
+						gl_col(
+							24,
 							array(
-								gl_d5_text( 'Heading: In the news', '<h2 class="gl-section-title gl-section-title--first">IN THE NEWS</h2>' ),
-								gl_d5_text( 'News gallery', gl_html_gallery( $news ) ),
-								gl_d5_text( 'Heading: Collection', '<h2 class="gl-section-title">GIAC\'S COLLECTION</h2>' ),
-								gl_d5_text( 'Collection gallery', gl_html_gallery( $collection ) ),
+								gl_text(
+									'Background credit',
+									'<p>Background by rawpixel.com on Freepik</p>',
+									gl_font( '10px', '#aaaaaa', '400', 'right' ),
+									array( 'spacing' => gl_v( array( 'margin' => array( 'top' => '10px', 'bottom' => '10px' ) ) ) )
+								),
 							)
+						),
+					),
+					array( 'max_width' => '100%' )
+				),
+				gl_row(
+					'Footer bar',
+					array(
+						gl_col( 8, array( gl_image( 'logo.png', 'Footer Logo', array( 'sizing' => gl_v( array( 'width' => 'auto', 'maxWidth' => '200px' ) ) ) ) ), array( 'alignItems' => 'center', 'justifyContent' => 'center' ) ),
+						gl_col( 8, array( gl_menu_links( $menu_id, 'Giacomo Licata Menu', $nav_font, array( 'size' => '12px' ), 'gl-footer-nav-item' ) ), $center ),
+						gl_col( 8, array( gl_text( 'Social icons', '<div class="gl-social">' . $social . '</div>', gl_font( '16px', '#ffffff', '400', 'center' ) ) ), $center ),
+					),
+					array(
+						'max_width' => '100%',
+						'gap'       => '0px',
+						'class'     => 'gl-footer-bar',
+						'layout'    => array( 'alignItems' => 'center' ),
+						'deco'      => array(
+							'background' => gl_v( array( 'color' => '#222325' ) ),
+							'spacing'    => gl_v( array( 'padding' => gl_box4( '30px', '0px' ) ) ),
+							'border'     => gl_v( array( 'styles' => array( 'top' => array( 'width' => '1px', 'color' => '#d9d9d9', 'style' => 'solid' ) ) ) ),
 						),
 					)
 				),
+			),
+			array(
+				'background' => gl_v( array( 'color' => 'rgba(0,0,0,0)' ) ),
+				'spacing'    => gl_v( array( 'padding' => gl_box4( '0px' ) ) ),
 			)
 		),
 	);
 }
 
-/**
- * Final Divi 5 post_content for a page, with image tokens resolved.
- *
- * @param string   $slug     Page slug.
- * @param callable $resolver fn( string $filename ): string URL.
- */
-function gl_build_page_content( $slug, $resolver ) {
-	$defs = gl_page_definitions();
-	if ( empty( $defs[ $slug ] ) ) {
-		return '';
-	}
-	return gl_resolve_tokens( gl_d5_serialize( call_user_func( $defs[ $slug ]['sections'] ) ), $resolver );
-}
+/* =========================================================================
+ * Output
+ * ====================================================================== */
 
 /**
  * Swap {{img:file}} (Media Library) and {{theme:file}} (theme assets) tokens for URLs.
@@ -612,76 +1144,17 @@ function gl_resolve_tokens( $content, $resolver ) {
 	);
 }
 
-/* -------------------------------------------------------------------------
- * Divi Theme Builder: Global Header + Global Footer
- * ---------------------------------------------------------------------- */
-
-/**
- * Global header: fixed bar with logo (left) and menu (right).
- * The menu is the [gl_nav] shortcode so it follows Appearance > Menus.
- */
-function gl_layout_header() {
-	$logo = '<a href="' . esc_url( home_url( '/' ) ) . '" class="gl-header__logo-link"><img src="{{img:giac-logo.png}}" alt="Giacomo Licata Logo" class="gl-header__logo" /></a>';
-
-	return array(
-		gl_d5_section(
-			'Header',
-			'gl-header gl-tb-header',
-			array(
-				gl_d5_row(
-					'Header bar',
-					'gl-header__bar',
-					'1_2,1_2',
-					array(
-						gl_d5_column( '1_2', 'gl-tb-col gl-tb-col--logo', array( gl_d5_text( 'Logo', $logo ) ) ),
-						gl_d5_column( '1_2', 'gl-tb-col gl-tb-col--nav', array( gl_d5_code( 'Menu (Appearance > Menus)', '[gl_nav type="header"]' ) ) ),
-					)
-				),
-			)
-		),
-	);
-}
-
-/**
- * Global footer: credit line, then logo / menu / social icons bar.
- */
-function gl_layout_footer() {
-	$social = '<div class="gl-social">';
-	foreach ( gl_social_links() as $s ) {
-		$social .= '<a href="' . esc_url( $s['url'] ) . '"><img src="{{theme:' . $s['icon'] . '}}" alt="' . esc_attr( $s['label'] ) . '" /></a>';
+/** Final Divi 5 post_content for a page. */
+function gl_build_page_content( $slug, $resolver ) {
+	$defs = gl_page_definitions();
+	if ( empty( $defs[ $slug ] ) ) {
+		return '';
 	}
-	$social .= '</div>';
-
-	return array(
-		gl_d5_section(
-			'Footer',
-			'gl-tb-footer',
-			array(
-				gl_d5_row(
-					'Credit',
-					'gl-credit-row',
-					'4_4',
-					array( gl_d5_column( '4_4', 'gl-tb-col', array( gl_d5_text( 'Background credit', '<p class="gl-credit">Background by rawpixel.com on Freepik</p>' ) ) ) )
-				),
-				gl_d5_row(
-					'Footer bar',
-					'gl-footer',
-					'1_3,1_3,1_3',
-					array(
-						gl_d5_column( '1_3', 'gl-footer__section', array( gl_d5_text( 'Footer logo', '<img src="{{img:logo.png}}" alt="Footer Logo" class="gl-footer__logo" />' ) ) ),
-						gl_d5_column( '1_3', 'gl-footer__section', array( gl_d5_code( 'Footer menu (Appearance > Menus)', '[gl_nav type="footer"]' ) ) ),
-						gl_d5_column( '1_3', 'gl-footer__section', array( gl_d5_text( 'Social icons', $social ) ) ),
-					)
-				),
-			)
-		),
-	);
+	return gl_resolve_tokens( gl_d5_serialize( call_user_func( $defs[ $slug ]['sections'] ) ), $resolver );
 }
 
-/**
- * Final Divi 5 content for the header ("header") or footer ("footer") layout.
- */
-function gl_build_layout_content( $which, $resolver ) {
-	$sections = 'footer' === $which ? gl_layout_footer() : gl_layout_header();
+/** Final Divi 5 content for the header ("header") or footer ("footer") layout. */
+function gl_build_layout_content( $which, $resolver, $menu_id = 0 ) {
+	$sections = 'footer' === $which ? gl_layout_footer( $menu_id ) : gl_layout_header( $menu_id );
 	return gl_resolve_tokens( gl_d5_serialize( $sections ), $resolver );
 }

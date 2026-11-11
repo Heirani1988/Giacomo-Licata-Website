@@ -170,7 +170,7 @@ function gl_save_builder_post( array $postarr, &$log, $label ) {
  * templates in `_et_template` meta; each `et_template` post points at its
  * header/body/footer layouts (`et_header_layout` / `et_footer_layout` posts).
  */
-function gl_install_theme_builder( $overwrite, $resolver, &$log ) {
+function gl_install_theme_builder( $overwrite, $resolver, &$log, $menu_id = 0 ) {
 	$tb_type     = defined( 'ET_THEME_BUILDER_THEME_BUILDER_POST_TYPE' ) ? ET_THEME_BUILDER_THEME_BUILDER_POST_TYPE : 'et_theme_builder';
 	$tpl_type    = defined( 'ET_THEME_BUILDER_TEMPLATE_POST_TYPE' ) ? ET_THEME_BUILDER_TEMPLATE_POST_TYPE : 'et_template';
 	$header_type = defined( 'ET_THEME_BUILDER_HEADER_LAYOUT_POST_TYPE' ) ? ET_THEME_BUILDER_HEADER_LAYOUT_POST_TYPE : 'et_header_layout';
@@ -270,7 +270,7 @@ function gl_install_theme_builder( $overwrite, $resolver, &$log ) {
 			'post_type'    => $type,
 			'post_status'  => 'publish',
 			'post_title'   => 'header' === $which ? 'Giacomo Licata Header' : 'Giacomo Licata Footer',
-			'post_content' => wp_slash( gl_build_layout_content( $which, $resolver ) ),
+			'post_content' => wp_slash( gl_build_layout_content( $which, $resolver, $menu_id ) ),
 		);
 		if ( $is_ours ) {
 			$postarr['ID'] = $current_id;
@@ -369,10 +369,6 @@ function gl_run_install( $overwrite = false, $theme_builder = true ) {
 		$log[]             = ( $existing ? 'Updated' : 'Created' ) . " page '{$slug}' (#{$id})";
 	}
 
-	/* 2b. Theme Builder header + footer ---------------------------------- */
-	if ( $theme_builder ) {
-		gl_install_theme_builder( $overwrite, $resolver, $log );
-	}
 	kses_init_filters();
 
 	update_option( 'gl_media_map', $map, false );
@@ -419,6 +415,14 @@ function gl_run_install( $overwrite = false, $theme_builder = true ) {
 		$locations['gl-footer']   = $menu_id;
 		set_theme_mod( 'nav_menu_locations', $locations );
 		$log[] = 'Menu assigned to header and footer.';
+	}
+
+	/* 4b. Theme Builder header + footer (their menu links loop over the menu above) */
+	if ( $theme_builder ) {
+		kses_remove_filters();
+		gl_install_theme_builder( $overwrite, $resolver, $log, is_wp_error( $menu_id ) ? 0 : (int) $menu_id );
+		kses_init_filters();
+		update_option( 'gl_media_map', $map, false );
 	}
 
 	/* 5. Divi: clear static CSS cache so new pages render cleanly ---------- */

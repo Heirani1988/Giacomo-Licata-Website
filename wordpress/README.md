@@ -1,6 +1,6 @@
 # Giacomo Licata – WordPress + Divi 5 version
 
-This folder rebuilds the live React site (www.giacomolicata.co.uk) on WordPress with Divi 5. It has the same pages, URLs, text, images, layout, header, footer, sliders and News lightbox.
+This folder rebuilds the live React site (www.giacomolicata.co.uk) on WordPress with Divi 5. It has the same pages, URLs, text and images. Every page, plus the header and footer, is built from **native Divi 5 modules** with the design set in Divi's own settings, so everything can be edited in the Divi Builder.
 
 ```
 wordpress/
@@ -8,9 +8,9 @@ wordpress/
 └── giacomo-licata-divi-child/           ← source of the child theme
     ├── style.css / functions.php
     ├── header.php / footer.php          ← fallback header/footer (used only if no Theme Builder ones)
-    ├── inc/content.php                  ← the 7 pages + Theme Builder header/footer, as Divi 5 layouts
+    ├── inc/content.php                  ← the 7 pages + Theme Builder header/footer, as native Divi 5 layouts
     ├── inc/installer.php                ← one-click setup (+ `wp gl install`)
-    └── assets/                          ← CSS, JS, slick slider, all site images
+    └── assets/                          ← small CSS/JS extras, all site images
 ```
 
 ## Requirements
@@ -37,36 +37,58 @@ The installer is safe to run again. It won't import images twice. It leaves alon
 
 ## Editing
 
-- **Page content:** open any page with the Divi Builder. Each box (Opening Times, Prices, Services and so on) is a Text module, and the layer names match the box titles. Edit the text in place.
-- **Sliders:** each one is a Text module. Every image inside it becomes a slide, so add or remove images to change the slides.
-- **News and Products grids:** these are Text modules too. Copy an existing item in the HTML tab to add a new one.
-- **Videos and map:** these are Code modules (YouTube and Google Maps iframes).
-- **Header and footer:** Divi → Theme Builder → Default Website Template → edit "Giacomo Licata Header" or "Giacomo Licata Footer" in the Divi Builder. The logo, background credit and social icons are Text modules; change the image, text or links there.
-- **Menu:** Appearance → Menus → "Giacomo Licata Menu". The header and footer show it through a Code module containing `[gl_nav type="header"]` / `[gl_nav type="footer"]`, which also highlights the current page. Leave those shortcodes in place.
-- **Styling:** `assets/css/site.css`. Rows and columns use classes such as `gl-row--top`, `gl-col--slider`, `gl-col--box` and `gl-col--stack`, set under each element's Advanced → CSS ID & Classes.
+Everything is edited in the Divi Builder, as on any Divi site:
 
-The header has the classes `gl-header gl-tb-header`, which make it fixed and transparent and turn it #242424 after scrolling 50px. Its row is `gl-header__bar`. In the footer, the bar row is `gl-footer` and its columns are `gl-footer__section`. Keep those classes (Advanced → CSS ID & Classes) or the styling won't apply.
+| On the page | Divi module(s) | Where |
+|---|---|---|
+| Boxes (Opening Times, Prices, Services…) | **Group** (background, border, shadow) holding an **Image** (some boxes), a **Heading** and a **Text** | each page |
+| Sliders | **Slider** with one **Slide** per image (the image is the slide background) | About, Prices, Products, Profiles |
+| Home hero | **Section** background image + five **Heading** modules | Home |
+| Products | Rows of 3 columns, each a **Group** of **Image + Heading + Text** (price) | Products |
+| Team / News / Collection grids | Rows of 3 columns, each a **Group** of **Image + Text** (the hover caption) | Profiles, News |
+| Videos | **Video** module (YouTube link) | About, News |
+| Map | **Code** module with the Google Maps embed (Divi's own Map module needs a Google API key) | Location |
+| Header / footer | **Image** logo + **Link** module looping over "Giacomo Licata Menu"; footer credit and social icons are **Text** | Divi → Theme Builder → Default Website Template |
 
-The theme also has a coded header and footer (`header.php` / `footer.php`). They're used only when no Theme Builder header or footer is assigned, for example if you untick the Theme Builder box or disable them in the Theme Builder. In that case the header logo comes from Divi → Theme Options → Logo, or the original logo if none is set.
+- **Menu:** Appearance → Menus → "Giacomo Licata Menu". The header and footer Link modules repeat once per menu item.
+- **News lightbox:** each News/Collection card's hover caption contains a link to the large image (Text module → link). Change that link to change what opens.
+- **Adding a product or team member:** duplicate an existing column's Group in the Layers panel and change the image and text.
+
+### The small custom extras
+
+Divi has no setting for a few things on the original site, so the theme adds them (`assets/css/site.css`, `assets/js/site.js`). Keep these CSS classes (Advanced → CSS ID & Classes) on the elements that have them:
+
+| Class | Where | What it does |
+|---|---|---|
+| `gl-header` | header Section | fixed over the page, transparent, turns #242424 after scrolling 50px |
+| `gl-nav-item` | header menu Link module | current page shown in brown |
+| `gl-hover-card` / `gl-hover-overlay` | Team/News Group / its caption Text | dark tint + caption on hover; News cards open the lightbox |
+| `gl-footer-bar` | footer bar Row | 90% opacity, as on the original |
+
+The theme also has a coded header and footer (`header.php` / `footer.php`). They're used only when no Theme Builder header or footer is assigned, for example if you untick the Theme Builder box or disable them in the Theme Builder.
 
 ## How faithful is it?
 
-The pages were checked against the live site in a headless browser at 1440px and 390px wide:
+The layout, text, colours and spacing follow the original. These parts deliberately differ because they now use Divi's own modules:
+- **Sliders** use Divi's arrows and dots, and the slides have a fixed height (412px on desktop) instead of following each image's shape.
+- **Videos** use Divi's Video module, so the player is responsive (16:9) rather than a fixed 315px tall.
+- **News/Collection images** keep their natural heights instead of being stretched to the tallest image in the row.
+- **The Prices and Services boxes** are equal width (on the original, Prices was slightly wider).
 
-- Every page has exactly the same height as the live site.
-- After all images load, Home, About, Prices, Profiles and News are pixel-identical. The only differences left came from the live server failing to send an image, or from Google Maps/YouTube loading.
+Two things also differ from the code in `src/`:
 
-Some quirks of the live site are kept on purpose: stretched product photos, the 3-column News grid on mobile, the Prices box being slightly wider than Services, and typos such as "Aftershare". Two things differ from the code in `src/`:
-
-- **Five team members, not six.** The live site shows Giacomo, Carmelo, Domenico, Alec and Gavin. Sean is in the repo source but was never deployed. To add him, put another `gl-team__item` in the Team module, using `sean-sm.jpg` from `src/assets/images/`.
+- **Five team members, not six.** The live site shows Giacomo, Carmelo, Domenico, Alec and Gavin. Sean is in the repo source but was never deployed. To add him, duplicate a team card and use `sean-sm.jpg` from `src/assets/images/`.
 - **The live header logo** (`giac-logo.png`, which has the flag) is used, not the older `logo.png`.
 
 ## Notes on the Divi 5 format
 
-Pages are stored in Divi 5's native block format: `divi/placeholder` › `divi/section` › `divi/row` › `divi/column` › `divi/text` / `divi/code`. The JSON is written by WordPress core's own block serializer. Each block is stamped with the Divi version that's installed.
+Pages are stored in Divi 5's native block format (`divi/placeholder` › `divi/section` › `divi/row` › `divi/column` › modules). Module settings follow the community [divi5-skill](https://github.com/divilovewp/divi5-skill) reference, which documents Divi 5.11–5.16. Every page and layout passes that reference's validation checklist. The JSON is written by WordPress core's block serializer, and each block is stamped with the installed Divi version.
 
-The header and footer are stored the way the Divi Theme Builder stores them: `et_header_layout` / `et_footer_layout` posts, assigned to the default `et_template` of the live `et_theme_builder` post.
+The header and footer are stored the way the Divi Theme Builder stores them: `et_header_layout` / `et_footer_layout` posts, assigned to the default `et_template` of the live `et_theme_builder` post. Divi's own helper functions are used to create them where available.
 
-Elegant Themes hasn't published a full specification of Divi 5's block attributes or Theme Builder storage. The attribute paths used here come from community documentation (see `inc/content.php`), and the content was only verified against a stand-in that renders the same markup Divi does. It has not been tested on a real Divi 5 install. If the header or footer doesn't appear after setup, open Divi → Theme Builder, check that the Default Website Template has them assigned, and click Save. If they still don't show, untick the Theme Builder box and re-run setup to use the coded fallback.
+**Not yet tested on a real Divi 5 site.** This build needs checking on a test site before going live. In particular, check that the box images are cropped to 200px, the boxes are equal height, and the header menu shows all seven links.
 
-If the visual builder ever shows a module as empty or unrecognised, open and re-save the page in the Divi Builder. If that doesn't fix it, rebuild that one module and paste in the HTML from `inc/content.php`. The front end doesn't depend on Divi's design settings, because all styling comes from the child theme's CSS.
+If something doesn't look right:
+- Run setup again with **Overwrite** ticked.
+- If a slider shows its slides stacked, Divi's module cache is stale. Setup clears it, but re-saving the page in the Divi Builder also fixes it.
+- If the header or footer doesn't appear, open Divi → Theme Builder, check that the Default Website Template has them assigned, and click Save.

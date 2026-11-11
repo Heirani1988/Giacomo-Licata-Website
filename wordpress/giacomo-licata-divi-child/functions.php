@@ -7,7 +7,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'GL_THEME_VERSION', '1.0.0' );
+define( 'GL_THEME_VERSION', '2.0.0' );
 define( 'GL_THEME_DIR', get_stylesheet_directory() );
 define( 'GL_THEME_URI', get_stylesheet_directory_uri() );
 
@@ -33,9 +33,7 @@ add_action( 'after_setup_theme', function () {
 add_action( 'wp_enqueue_scripts', function () {
 	$v = GL_THEME_VERSION;
 
-	wp_enqueue_style( 'gl-slick', GL_THEME_URI . '/assets/vendor/slick/slick.css', array(), '1.8.1' );
-	wp_enqueue_style( 'gl-slick-theme', GL_THEME_URI . '/assets/vendor/slick/slick-theme.css', array( 'gl-slick' ), '1.8.1' );
-	wp_enqueue_style( 'gl-site', GL_THEME_URI . '/assets/css/site.css', array( 'gl-slick-theme' ), $v );
+	wp_enqueue_style( 'gl-site', GL_THEME_URI . '/assets/css/site.css', array(), $v );
 
 	// The original site's body background image.
 	wp_add_inline_style(
@@ -43,8 +41,7 @@ add_action( 'wp_enqueue_scripts', function () {
 		'html body.gl-site{background-image:url("' . esc_url( GL_THEME_URI . '/assets/images/black-abstract-background-wallpaper-image.jpg' ) . '");}'
 	);
 
-	wp_enqueue_script( 'gl-slick', GL_THEME_URI . '/assets/vendor/slick/slick.min.js', array( 'jquery' ), '1.8.1', true );
-	wp_enqueue_script( 'gl-site', GL_THEME_URI . '/assets/js/site.js', array( 'jquery', 'gl-slick' ), $v, true );
+	wp_enqueue_script( 'gl-site', GL_THEME_URI . '/assets/js/site.js', array(), $v, true );
 }, 20 );
 
 /**
