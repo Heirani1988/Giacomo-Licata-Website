@@ -555,6 +555,133 @@ body.gl-site .gl-modal__close {
 	line-height: normal;
 }
 
+
+/* --------------------------------------------------------------------------
+   Divi Theme Builder header / footer
+   Divi renders these inside .et-l--header / .et-l--footer. Divi's section,
+   row, column and module defaults are neutralised so the result matches the
+   original header and footer exactly.
+   ----------------------------------------------------------------------- */
+body.gl-site .et-l--header,
+body.gl-site .et-l--footer,
+body.gl-site .et-l--header .et_builder_inner_content,
+body.gl-site .et-l--footer .et_builder_inner_content {
+	padding: 0 !important;
+	margin: 0 !important;
+	background: transparent !important;
+	position: static;
+	z-index: auto;
+}
+body.gl-site .et-l--header .et_pb_section,
+body.gl-site .et-l--footer .et_pb_section {
+	padding: 0 !important;
+	margin: 0 !important;
+	background-image: none !important;
+	width: auto;
+}
+body.gl-site .et-l--footer .et_pb_section { background-color: transparent !important; }
+body.gl-site .et-l--header .et_pb_row,
+body.gl-site .et-l--footer .et_pb_row {
+	width: 100% !important;
+	max-width: none !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	display: block;
+}
+body.gl-site .et-l--header .et_pb_column,
+body.gl-site .et-l--footer .et_pb_column {
+	width: auto !important;
+	max-width: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	float: none !important;
+}
+body.gl-site .et-l--header .et_pb_module,
+body.gl-site .et-l--footer .et_pb_module {
+	margin: 0 !important;
+	padding: 0 !important;
+	background: transparent !important;
+	animation: none !important;
+	text-align: inherit !important;
+}
+body.gl-site .et-l--header .et_pb_row::before,
+body.gl-site .et-l--header .et_pb_row::after,
+body.gl-site .et-l--header .et_pb_column::before,
+body.gl-site .et-l--header .et_pb_column::after,
+body.gl-site .et-l--header .et_pb_module::before,
+body.gl-site .et-l--header .et_pb_module::after,
+body.gl-site .et-l--footer .et_pb_row::before,
+body.gl-site .et-l--footer .et_pb_row::after,
+body.gl-site .et-l--footer .et_pb_column::before,
+body.gl-site .et-l--footer .et_pb_column::after,
+body.gl-site .et-l--footer .et_pb_module::before,
+body.gl-site .et-l--footer .et_pb_module::after { display: none !important; }
+
+/* Header bar */
+body.gl-site .et-l--header .et_pb_section.gl-header {
+	position: fixed !important;
+	top: 0;
+	left: 0;
+	width: 100% !important;
+	z-index: 1000;
+	padding: 10px 20px !important;
+	background-color: transparent !important;
+	border-bottom: 1px solid #d9d9d9;
+	transition: background-color 0.3s ease;
+}
+body.gl-site .et-l--header .et_pb_section.gl-header.is-scrolled { background-color: #242424 !important; }
+body.gl-site.admin-bar .et-l--header .et_pb_section.gl-header { top: 32px; }
+body.gl-site .et-l--header .et_pb_row.gl-header__bar {
+	display: flex !important;
+	flex-direction: row !important;
+	justify-content: space-between !important;
+	align-items: center !important;
+	gap: 0 !important;
+}
+body.gl-site .et-l--header .gl-header__bar > .et_pb_column { flex: 0 0 auto !important; }
+body.gl-site .et-l--header .gl-header__bar .et_pb_module,
+body.gl-site .et-l--header .gl-header__bar .et_pb_text_inner,
+body.gl-site .et-l--header .gl-header__bar .et_pb_code_inner {
+	display: flex;
+	align-items: center;
+	line-height: normal;
+}
+
+/* Footer */
+body.gl-site .et-l--footer .et_pb_module,
+body.gl-site .et-l--footer .et_pb_text_inner { line-height: normal; font-size: 16px; }
+body.gl-site .et-l--footer .et_pb_row.gl-footer {
+	background-color: #222325 !important;
+	padding: 20px 0 !important;
+	border-top: 1px solid #d9d9d9;
+	opacity: 0.9;
+	display: flex !important;
+	flex-direction: row !important;
+	flex-wrap: wrap !important;
+	justify-content: space-between !important;
+	align-items: center !important;
+	text-align: center;
+	gap: 0 !important;
+}
+body.gl-site .et-l--footer .gl-footer > .et_pb_column.gl-footer__section {
+	flex: 1 1 0% !important;
+	display: flex !important;
+	justify-content: center;
+	align-items: center;
+	margin: 10px 0 !important;
+}
+body.gl-site .et-l--footer .gl-footer__section .et_pb_module,
+body.gl-site .et-l--footer .gl-footer__section .et_pb_text_inner,
+body.gl-site .et-l--footer .gl-footer__section .et_pb_code_inner {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: auto;
+}
+body.gl-site .et-l--footer p.gl-credit { margin: 10px 0; padding: 0; }
+body.gl-site .et-l--header img,
+body.gl-site .et-l--footer img { vertical-align: baseline; }
+
 /* --------------------------------------------------------------------------
    Mobile (max-width: 768px) – same breakpoints as the original
    ----------------------------------------------------------------------- */
@@ -573,6 +700,13 @@ body.gl-site .gl-modal__close {
 	body.gl-site .gl-footer__section { width: 100%; }
 	body.gl-site .gl-footer__nav { gap: 10px; }
 	body.gl-site .gl-footer__nav a.gl-footer-link { font-size: 12px; }
+
+	body.gl-site .et-l--header .et_pb_row.gl-header__bar { flex-direction: column !important; }
+	body.gl-site .et-l--header .gl-header__bar > .gl-tb-col--nav { width: 100% !important; }
+	body.gl-site .et-l--header .gl-tb-col--nav .et_pb_module,
+	body.gl-site .et-l--header .gl-tb-col--nav .et_pb_code_inner { width: 100%; }
+	body.gl-site .et-l--footer .et_pb_row.gl-footer { flex-direction: column !important; text-align: center; }
+	body.gl-site .et-l--footer .gl-footer > .et_pb_column.gl-footer__section { width: 100% !important; }
 
 	body.gl-site #main-content .et_pb_section.gl-page { padding: 7rem 2rem 1rem !important; }
 	/* The original News page has no mobile padding override. */
@@ -595,5 +729,6 @@ body.gl-site .gl-modal__close {
 }
 
 @media (max-width: 782px) {
-	body.gl-site.admin-bar .gl-header { top: 46px; }
+	body.gl-site.admin-bar .gl-header,
+	body.gl-site.admin-bar .et-l--header .et_pb_section.gl-header { top: 46px; }
 }

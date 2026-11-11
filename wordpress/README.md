@@ -7,8 +7,8 @@ wordpress/
 ├── dist/giacomo-licata-divi-child.zip   ← upload this to WordPress
 └── giacomo-licata-divi-child/           ← source of the child theme
     ├── style.css / functions.php
-    ├── header.php / footer.php          ← fixed header (goes dark on scroll) + footer
-    ├── inc/content.php                  ← the 7 pages, as Divi 5 layouts
+    ├── header.php / footer.php          ← fallback header/footer (used only if no Theme Builder ones)
+    ├── inc/content.php                  ← the 7 pages + Theme Builder header/footer, as Divi 5 layouts
     ├── inc/installer.php                ← one-click setup (+ `wp gl install`)
     └── assets/                          ← CSS, JS, slick slider, all site images
 ```
@@ -28,11 +28,12 @@ wordpress/
    - creates **Home, About, Prices, Products, Location, Profiles, News** as Divi 5 builder pages
    - sets Home as the front page and turns on `/%postname%/` permalinks, so `/about`, `/prices` and the other old URLs keep working
    - creates the "Giacomo Licata Menu" and assigns it to the header and footer
+   - creates a **Global Header** and **Global Footer** in **Divi → Theme Builder** (the "Create the header and footer in the Divi Theme Builder" box, ticked by default)
 4. Optional: set **Settings → General → Site Title** to `Giacomo Licata`. The original site uses that as the browser tab title on every page.
 
-You can also run it from WP-CLI with `wp gl install`. Add `--overwrite` to reset the pages to the original content.
+You can also run it from WP-CLI with `wp gl install`. Add `--overwrite` to reset the pages and header/footer to the original content, or `--skip-theme-builder` to leave the Theme Builder alone.
 
-The installer is safe to run again. It won't import images twice. It leaves alone pages you've already edited, and pages it didn't create, unless you tick **Overwrite**.
+The installer is safe to run again. It won't import images twice. It leaves alone pages you've already edited, pages it didn't create, and any header or footer already assigned in the Theme Builder, unless you tick **Overwrite**.
 
 ## Editing
 
@@ -40,11 +41,13 @@ The installer is safe to run again. It won't import images twice. It leaves alon
 - **Sliders:** each one is a Text module. Every image inside it becomes a slide, so add or remove images to change the slides.
 - **News and Products grids:** these are Text modules too. Copy an existing item in the HTML tab to add a new one.
 - **Videos and map:** these are Code modules (YouTube and Google Maps iframes).
-- **Menu:** Appearance → Menus → "Giacomo Licata Menu".
-- **Header logo:** Divi → Theme Options → Logo. If no logo is set there, the original logo with the flag is used.
+- **Header and footer:** Divi → Theme Builder → Default Website Template → edit "Giacomo Licata Header" or "Giacomo Licata Footer" in the Divi Builder. The logo, background credit and social icons are Text modules; change the image, text or links there.
+- **Menu:** Appearance → Menus → "Giacomo Licata Menu". The header and footer show it through a Code module containing `[gl_nav type="header"]` / `[gl_nav type="footer"]`, which also highlights the current page. Leave those shortcodes in place.
 - **Styling:** `assets/css/site.css`. Rows and columns use classes such as `gl-row--top`, `gl-col--slider`, `gl-col--box` and `gl-col--stack`, set under each element's Advanced → CSS ID & Classes.
 
-The theme provides its own header and footer (`header.php` and `footer.php`) so they match the original exactly. If you later build a global header or footer in the Divi Theme Builder, Divi will use that instead.
+The header has the classes `gl-header gl-tb-header`, which make it fixed and transparent and turn it #242424 after scrolling 50px. Its row is `gl-header__bar`. In the footer, the bar row is `gl-footer` and its columns are `gl-footer__section`. Keep those classes (Advanced → CSS ID & Classes) or the styling won't apply.
+
+The theme also has a coded header and footer (`header.php` / `footer.php`). They're used only when no Theme Builder header or footer is assigned, for example if you untick the Theme Builder box or disable them in the Theme Builder. In that case the header logo comes from Divi → Theme Options → Logo, or the original logo if none is set.
 
 ## How faithful is it?
 
@@ -62,6 +65,8 @@ Some quirks of the live site are kept on purpose: stretched product photos, the 
 
 Pages are stored in Divi 5's native block format: `divi/placeholder` › `divi/section` › `divi/row` › `divi/column` › `divi/text` / `divi/code`. The JSON is written by WordPress core's own block serializer. Each block is stamped with the Divi version that's installed.
 
-Elegant Themes hasn't published a full specification of Divi 5's block attributes. The attribute paths used here come from community documentation (see `inc/content.php`), and the content was only verified against a stand-in that renders the same markup Divi does. It has not been tested on a real Divi 5 install.
+The header and footer are stored the way the Divi Theme Builder stores them: `et_header_layout` / `et_footer_layout` posts, assigned to the default `et_template` of the live `et_theme_builder` post.
+
+Elegant Themes hasn't published a full specification of Divi 5's block attributes or Theme Builder storage. The attribute paths used here come from community documentation (see `inc/content.php`), and the content was only verified against a stand-in that renders the same markup Divi does. It has not been tested on a real Divi 5 install. If the header or footer doesn't appear after setup, open Divi → Theme Builder, check that the Default Website Template has them assigned, and click Save. If they still don't show, untick the Theme Builder box and re-run setup to use the coded fallback.
 
 If the visual builder ever shows a module as empty or unrecognised, open and re-save the page in the Divi Builder. If that doesn't fix it, rebuild that one module and paste in the HTML from `inc/content.php`. The front end doesn't depend on Divi's design settings, because all styling comes from the child theme's CSS.

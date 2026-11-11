@@ -584,14 +584,100 @@ function gl_build_page_content( $slug, $resolver ) {
 	if ( empty( $defs[ $slug ] ) ) {
 		return '';
 	}
-	$content = gl_d5_serialize( call_user_func( $defs[ $slug ]['sections'] ) );
+	return gl_resolve_tokens( gl_d5_serialize( call_user_func( $defs[ $slug ]['sections'] ) ), $resolver );
+}
 
-	// Tokens are inside JSON strings; URLs need no JSON escaping beyond "/" which is fine raw.
-	return preg_replace_callback(
+/**
+ * Swap {{img:file}} (Media Library) and {{theme:file}} (theme assets) tokens for URLs.
+ * Tokens sit inside JSON strings; plain URLs need no extra escaping there.
+ */
+function gl_resolve_tokens( $content, $resolver ) {
+	$content = preg_replace_callback(
 		'/\{\{img:([^}]+)\}\}/',
 		function ( $m ) use ( $resolver ) {
 			return esc_url_raw( call_user_func( $resolver, $m[1] ) );
 		},
 		$content
 	);
+	return preg_replace_callback(
+		'/\{\{theme:([^}]+)\}\}/',
+		function ( $m ) {
+			return esc_url_raw( GL_THEME_URI . '/assets/images/' . $m[1] );
+		},
+		$content
+	);
+}
+
+/* -------------------------------------------------------------------------
+ * Divi Theme Builder: Global Header + Global Footer
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Global header: fixed bar with logo (left) and menu (right).
+ * The menu is the [gl_nav] shortcode so it follows Appearance > Menus.
+ */
+function gl_layout_header() {
+	$logo = '<a href="' . esc_url( home_url( '/' ) ) . '" class="gl-header__logo-link"><img src="{{img:giac-logo.png}}" alt="Giacomo Licata Logo" class="gl-header__logo" /></a>';
+
+	return array(
+		gl_d5_section(
+			'Header',
+			'gl-header gl-tb-header',
+			array(
+				gl_d5_row(
+					'Header bar',
+					'gl-header__bar',
+					'1_2,1_2',
+					array(
+						gl_d5_column( '1_2', 'gl-tb-col gl-tb-col--logo', array( gl_d5_text( 'Logo', $logo ) ) ),
+						gl_d5_column( '1_2', 'gl-tb-col gl-tb-col--nav', array( gl_d5_code( 'Menu (Appearance > Menus)', '[gl_nav type="header"]' ) ) ),
+					)
+				),
+			)
+		),
+	);
+}
+
+/**
+ * Global footer: credit line, then logo / menu / social icons bar.
+ */
+function gl_layout_footer() {
+	$social = '<div class="gl-social">';
+	foreach ( gl_social_links() as $s ) {
+		$social .= '<a href="' . esc_url( $s['url'] ) . '"><img src="{{theme:' . $s['icon'] . '}}" alt="' . esc_attr( $s['label'] ) . '" /></a>';
+	}
+	$social .= '</div>';
+
+	return array(
+		gl_d5_section(
+			'Footer',
+			'gl-tb-footer',
+			array(
+				gl_d5_row(
+					'Credit',
+					'gl-credit-row',
+					'4_4',
+					array( gl_d5_column( '4_4', 'gl-tb-col', array( gl_d5_text( 'Background credit', '<p class="gl-credit">Background by rawpixel.com on Freepik</p>' ) ) ) )
+				),
+				gl_d5_row(
+					'Footer bar',
+					'gl-footer',
+					'1_3,1_3,1_3',
+					array(
+						gl_d5_column( '1_3', 'gl-footer__section', array( gl_d5_text( 'Footer logo', '<img src="{{img:logo.png}}" alt="Footer Logo" class="gl-footer__logo" />' ) ) ),
+						gl_d5_column( '1_3', 'gl-footer__section', array( gl_d5_code( 'Footer menu (Appearance > Menus)', '[gl_nav type="footer"]' ) ) ),
+						gl_d5_column( '1_3', 'gl-footer__section', array( gl_d5_text( 'Social icons', $social ) ) ),
+					)
+				),
+			)
+		),
+	);
+}
+
+/**
+ * Final Divi 5 content for the header ("header") or footer ("footer") layout.
+ */
+function gl_build_layout_content( $which, $resolver ) {
+	$sections = 'footer' === $which ? gl_layout_footer() : gl_layout_header();
+	return gl_resolve_tokens( gl_d5_serialize( $sections ), $resolver );
 }

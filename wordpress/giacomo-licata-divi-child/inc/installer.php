@@ -4,7 +4,7 @@
  * seven Divi 5 pages, sets the front page, permalinks and menus.
  *
  * Admin:  Appearance > Giacomo Licata Setup
- * WP-CLI: wp gl install [--overwrite]
+ * WP-CLI: wp gl install [--overwrite] [--skip-theme-builder]
  *
  * @package GiacomoLicata
  */
@@ -51,7 +51,7 @@ function gl_render_setup_page() {
 	$log = null;
 	if ( isset( $_POST['gl_install'] ) ) {
 		check_admin_referer( 'gl_install' );
-		$log = gl_run_install( ! empty( $_POST['gl_overwrite'] ) );
+		$log = gl_run_install( ! empty( $_POST['gl_overwrite'] ), ! empty( $_POST['gl_theme_builder'] ) );
 	}
 
 	$divi_ok = 'Divi' === get_template();
@@ -73,9 +73,11 @@ function gl_render_setup_page() {
 			<li><?php esc_html_e( 'Create the Home, About, Prices, Products, Location, Profiles and News pages as Divi 5 layouts.', 'giacomo-licata' ); ?></li>
 			<li><?php esc_html_e( 'Set Home as the front page and use /page-name/ permalinks (so /about, /prices etc. match the old site).', 'giacomo-licata' ); ?></li>
 			<li><?php esc_html_e( 'Create the header and footer menu.', 'giacomo-licata' ); ?></li>
+			<li><?php esc_html_e( 'Optionally create a Global Header and Global Footer in Divi > Theme Builder, so both can be edited in the Divi Builder.', 'giacomo-licata' ); ?></li>
 		</ol>
 		<form method="post">
 			<?php wp_nonce_field( 'gl_install' ); ?>
+			<p><label><input type="checkbox" name="gl_theme_builder" value="1" checked="checked" /> <?php esc_html_e( 'Create the header and footer in the Divi Theme Builder (recommended – editable in the Divi Builder). Unticked, the theme’s built-in header and footer are used.', 'giacomo-licata' ); ?></label></p>
 			<p><label><input type="checkbox" name="gl_overwrite" value="1" /> <?php esc_html_e( 'Overwrite pages that already exist with the same slug (also resets any edits made to pages created by this installer).', 'giacomo-licata' ); ?></label></p>
 			<p><button type="submit" name="gl_install" value="1" class="button button-primary button-hero" <?php disabled( ! $divi_ok ); ?>><?php esc_html_e( 'Install Giacomo Licata website', 'giacomo-licata' ); ?></button></p>
 		</form>
@@ -128,12 +130,144 @@ function gl_import_image( $filename, &$map, &$log ) {
 }
 
 /**
+ * Create or update a builder post (page or Theme Builder layout) and flag it as a Divi 5 builder post.
+ *
+ * @return int Post ID or 0.
+ */
+function gl_save_builder_post( array $postarr, &$log, $label ) {
+	if ( ! empty( $postarr['ID'] ) ) {
+		$id = wp_update_post( $postarr, true );
+	} else {
+		$id = wp_insert_post( $postarr, true );
+	}
+	if ( is_wp_error( $id ) ) {
+		$log[] = "Failed to save {$label}: " . $id->get_error_message();
+		return 0;
+	}
+	update_post_meta( $id, '_et_pb_use_builder', 'on' );
+	update_post_meta( $id, '_et_builder_version', 'VB|Divi|' . gl_d5_version() );
+	update_post_meta( $id, '_et_pb_old_content', '' );
+	return (int) $id;
+}
+
+/**
+ * Divi Theme Builder: create "Giacomo Licata Header/Footer" layouts and assign
+ * them to the Default Website Template.
+ *
+ * Storage (same in Divi 4 and 5): an `et_theme_builder` post lists its
+ * templates in `_et_template` meta; each `et_template` post points at its
+ * header/body/footer layouts (`et_header_layout` / `et_footer_layout` posts).
+ */
+function gl_install_theme_builder( $overwrite, $resolver, &$log ) {
+	$tb_type     = defined( 'ET_THEME_BUILDER_THEME_BUILDER_POST_TYPE' ) ? ET_THEME_BUILDER_THEME_BUILDER_POST_TYPE : 'et_theme_builder';
+	$tpl_type    = defined( 'ET_THEME_BUILDER_TEMPLATE_POST_TYPE' ) ? ET_THEME_BUILDER_TEMPLATE_POST_TYPE : 'et_template';
+	$header_type = defined( 'ET_THEME_BUILDER_HEADER_LAYOUT_POST_TYPE' ) ? ET_THEME_BUILDER_HEADER_LAYOUT_POST_TYPE : 'et_header_layout';
+	$footer_type = defined( 'ET_THEME_BUILDER_FOOTER_LAYOUT_POST_TYPE' ) ? ET_THEME_BUILDER_FOOTER_LAYOUT_POST_TYPE : 'et_footer_layout';
+
+	// 1. The live Theme Builder post.
+	$tb_id = 0;
+	if ( function_exists( 'et_theme_builder_get_theme_builder_post_id' ) ) {
+		$tb_id = (int) et_theme_builder_get_theme_builder_post_id( true, true );
+	}
+	if ( ! $tb_id ) {
+		$found = get_posts(
+			array(
+				'post_type'      => $tb_type,
+				'post_status'    => 'publish',
+				'posts_per_page' => 1,
+				'orderby'        => 'date',
+				'order'          => 'DESC',
+				'fields'         => 'ids',
+			)
+		);
+		$tb_id = $found ? (int) $found[0] : (int) wp_insert_post(
+			array(
+				'post_type'   => $tb_type,
+				'post_status' => 'publish',
+				'post_title'  => 'Theme Builder',
+			)
+		);
+	}
+	if ( ! $tb_id ) {
+		$log[] = 'Theme Builder: could not find or create the Theme Builder post – skipped.';
+		return;
+	}
+
+	// 2. Its default template.
+	$template_id = 0;
+	foreach ( (array) get_post_meta( $tb_id, '_et_template' ) as $tid ) {
+		if ( get_post( (int) $tid ) && '1' === (string) get_post_meta( (int) $tid, '_et_default', true ) ) {
+			$template_id = (int) $tid;
+			break;
+		}
+	}
+	if ( ! $template_id ) {
+		$template_id = (int) wp_insert_post(
+			array(
+				'post_type'   => $tpl_type,
+				'post_status' => 'publish',
+				'post_title'  => 'Default Website Template',
+			)
+		);
+		if ( ! $template_id ) {
+			$log[] = 'Theme Builder: could not create the default template – skipped.';
+			return;
+		}
+		add_post_meta( $tb_id, '_et_template', $template_id );
+		update_post_meta( $template_id, '_et_default', '1' );
+		update_post_meta( $template_id, '_et_enabled', '1' );
+		update_post_meta( $template_id, '_et_body_layout_id', 0 );
+		update_post_meta( $template_id, '_et_body_layout_enabled', '1' );
+		$log[] = "Theme Builder: created Default Website Template (#{$template_id}).";
+	}
+
+	// 3. Header + footer layouts.
+	foreach ( array( 'header' => $header_type, 'footer' => $footer_type ) as $which => $type ) {
+		$current_id = (int) get_post_meta( $template_id, "_et_{$which}_layout_id", true );
+		$current    = $current_id ? get_post( $current_id ) : null;
+		$is_ours    = $current && get_post_meta( $current_id, '_gl_layout', true );
+
+		if ( $current && 'trash' !== $current->post_status && ! $overwrite ) {
+			$log[] = $is_ours
+				? "Theme Builder: kept existing {$which} (tick Overwrite to reset it)."
+				: "Theme Builder: the default template already has a {$which} – left unchanged (tick Overwrite to replace it).";
+			continue;
+		}
+
+		$postarr = array(
+			'post_type'    => $type,
+			'post_status'  => 'publish',
+			'post_title'   => 'header' === $which ? 'Giacomo Licata Header' : 'Giacomo Licata Footer',
+			'post_content' => wp_slash( gl_build_layout_content( $which, $resolver ) ),
+		);
+		if ( $is_ours ) {
+			$postarr['ID'] = $current_id;
+		}
+		$layout_id = gl_save_builder_post( $postarr, $log, "{$which} layout" );
+		if ( ! $layout_id ) {
+			continue;
+		}
+		update_post_meta( $layout_id, '_gl_layout', $which );
+		delete_post_meta( $layout_id, '_et_theme_builder_marked_as_unused' );
+
+		update_post_meta( $template_id, "_et_{$which}_layout_id", $layout_id );
+		update_post_meta( $template_id, "_et_{$which}_layout_enabled", '1' );
+		$log[] = 'Theme Builder: ' . ( $is_ours ? 'updated' : 'created' ) . " global {$which} (#{$layout_id}).";
+	}
+
+	if ( function_exists( 'et_theme_builder_clear_wp_cache' ) ) {
+		et_theme_builder_clear_wp_cache( 'all' );
+	}
+}
+
+/**
  * Run the full install.
  *
- * @param bool $overwrite Overwrite existing pages.
+ * @param bool $overwrite     Overwrite existing pages / layouts.
+ * @param bool $theme_builder Create the Divi Theme Builder header + footer.
  * @return string[] Log lines.
  */
-function gl_run_install( $overwrite = false ) {
+function gl_run_install( $overwrite = false, $theme_builder = true ) {
 	$log = array();
 
 	if ( function_exists( 'set_time_limit' ) ) {
@@ -186,29 +320,26 @@ function gl_run_install( $overwrite = false ) {
 
 		if ( $existing ) {
 			$postarr['ID'] = $existing->ID;
-			$id            = wp_update_post( $postarr, true );
-		} else {
-			$id = wp_insert_post( $postarr, true );
 		}
-
-		if ( is_wp_error( $id ) ) {
-			$log[] = "Failed to save page '{$slug}': " . $id->get_error_message();
+		$id = gl_save_builder_post( $postarr, $log, "page '{$slug}'" );
+		if ( ! $id ) {
 			continue;
 		}
 
-		$version = gl_d5_version();
 		update_post_meta( $id, '_gl_page', 1 );
-		update_post_meta( $id, '_et_pb_use_builder', 'on' );
 		update_post_meta( $id, '_et_pb_page_layout', 'et_full_width_page' );
 		update_post_meta( $id, '_et_pb_side_nav', 'off' );
 		update_post_meta( $id, '_et_pb_show_title', 'off' );
 		update_post_meta( $id, '_et_pb_built_for_post_type', 'page' );
-		update_post_meta( $id, '_et_builder_version', 'VB|Divi|' . $version );
-		update_post_meta( $id, '_et_pb_old_content', '' );
 		update_post_meta( $id, '_wp_page_template', 'default' );
 
 		$page_ids[ $slug ] = (int) $id;
 		$log[]             = ( $existing ? 'Updated' : 'Created' ) . " page '{$slug}' (#{$id})";
+	}
+
+	/* 2b. Theme Builder header + footer ---------------------------------- */
+	if ( $theme_builder ) {
+		gl_install_theme_builder( $overwrite, $resolver, $log );
 	}
 	kses_init_filters();
 
@@ -269,13 +400,13 @@ function gl_run_install( $overwrite = false ) {
 }
 
 /**
- * WP-CLI: wp gl install [--overwrite]
+ * WP-CLI: wp gl install [--overwrite] [--skip-theme-builder]
  */
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	WP_CLI::add_command(
 		'gl install',
 		function ( $args, $assoc ) {
-			foreach ( gl_run_install( ! empty( $assoc['overwrite'] ) ) as $line ) {
+			foreach ( gl_run_install( ! empty( $assoc['overwrite'] ), empty( $assoc['skip-theme-builder'] ) ) as $line ) {
 				WP_CLI::log( $line );
 			}
 			WP_CLI::success( 'Giacomo Licata site installed.' );

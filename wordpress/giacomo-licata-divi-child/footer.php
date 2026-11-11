@@ -1,6 +1,7 @@
 <?php
 /**
- * Site footer – credit line, logo, footer menu and social icons.
+ * Fallback site footer (used when no Divi Theme Builder footer is assigned):
+ * credit line, logo, footer menu and social icons.
  *
  * @package GiacomoLicata
  */
@@ -13,11 +14,7 @@ defined( 'ABSPATH' ) || exit;
 				<img src="<?php echo esc_url( GL_THEME_URI . '/assets/images/logo.png' ); ?>" alt="<?php esc_attr_e( 'Footer Logo', 'giacomo-licata' ); ?>" class="gl-footer__logo" />
 			</div>
 			<div class="gl-footer__section">
-				<nav class="gl-footer__nav" aria-label="<?php esc_attr_e( 'Footer menu', 'giacomo-licata' ); ?>">
-					<?php foreach ( gl_menu_items( 'gl-footer' ) as $item ) : ?>
-						<a class="gl-footer-link" href="<?php echo esc_url( $item['url'] ); ?>"><?php echo esc_html( $item['title'] ); ?></a>
-					<?php endforeach; ?>
-				</nav>
+				<?php echo gl_render_nav( 'footer' ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in gl_render_nav(). ?>
 			</div>
 			<div class="gl-footer__section">
 				<div class="gl-social">
@@ -30,12 +27,6 @@ defined( 'ABSPATH' ) || exit;
 	</div><!-- #et-main-area -->
 </div><!-- #page-container -->
 
-<div class="gl-modal" id="gl-modal" aria-hidden="true">
-	<div class="gl-modal__content">
-		<img class="gl-modal__image" src="" alt="<?php esc_attr_e( 'Enlarged', 'giacomo-licata' ); ?>" />
-		<button type="button" class="gl-modal__close"><?php esc_html_e( 'Close', 'giacomo-licata' ); ?></button>
-	</div>
-</div>
 
 <?php wp_footer(); ?>
 </body>

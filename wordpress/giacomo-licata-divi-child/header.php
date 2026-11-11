@@ -1,6 +1,7 @@
 <?php
 /**
- * Site header – replicates the original fixed, transparent header that turns
+ * Fallback site header (used when no Divi Theme Builder header is assigned).
+ * Replicates the original fixed, transparent header that turns
  * dark (#242424) once the page is scrolled more than 50px.
  *
  * @package GiacomoLicata
@@ -22,11 +23,7 @@ defined( 'ABSPATH' ) || exit;
 			<a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="gl-header__logo-link">
 				<img src="<?php echo esc_url( gl_header_logo_url() ); ?>" alt="<?php esc_attr_e( 'Giacomo Licata Logo', 'giacomo-licata' ); ?>" class="gl-header__logo" />
 			</a>
-			<nav class="gl-header__nav" aria-label="<?php esc_attr_e( 'Main menu', 'giacomo-licata' ); ?>">
-				<?php foreach ( gl_menu_items( 'gl-primary' ) as $item ) : ?>
-					<a class="gl-nav-link<?php echo $item['active'] ? ' active' : ''; ?>" href="<?php echo esc_url( $item['url'] ); ?>"><?php echo esc_html( $item['title'] ); ?></a>
-				<?php endforeach; ?>
-			</nav>
+			<?php echo gl_render_nav( 'header' ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in gl_render_nav(). ?>
 		</div>
 	</header>
 	<div id="et-main-area">

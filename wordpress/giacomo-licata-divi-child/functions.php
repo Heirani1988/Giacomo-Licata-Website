@@ -126,6 +126,55 @@ function gl_menu_items( $location ) {
 }
 
 /**
+ * Render the header or footer navigation.
+ *
+ * @param string $variant "header" or "footer".
+ */
+function gl_render_nav( $variant = 'header' ) {
+	$footer   = 'footer' === $variant;
+	$location = $footer ? 'gl-footer' : 'gl-primary';
+	$html     = '<nav class="' . ( $footer ? 'gl-footer__nav' : 'gl-header__nav' ) . '" aria-label="' . esc_attr( $footer ? __( 'Footer menu', 'giacomo-licata' ) : __( 'Main menu', 'giacomo-licata' ) ) . '">';
+	foreach ( gl_menu_items( $location ) as $item ) {
+		$class = $footer ? 'gl-footer-link' : 'gl-nav-link' . ( $item['active'] ? ' active' : '' );
+		$html .= '<a class="' . esc_attr( $class ) . '" href="' . esc_url( $item['url'] ) . '">' . esc_html( $item['title'] ) . '</a>';
+	}
+	return $html . '</nav>';
+}
+
+/**
+ * [gl_nav type="header|footer"] – used inside the Divi Theme Builder header/footer
+ * so the menu stays editable from Appearance > Menus and shows the active page.
+ */
+add_shortcode( 'gl_nav', function ( $atts ) {
+	$atts = shortcode_atts( array( 'type' => 'header' ), $atts, 'gl_nav' );
+	return gl_render_nav( 'footer' === $atts['type'] ? 'footer' : 'header' );
+} );
+
+/**
+ * Make sure [gl_*] shortcodes run inside Divi 5 modules, whatever module they are in.
+ */
+add_filter( 'render_block', function ( $html, $block ) {
+	if ( ! empty( $block['blockName'] ) && 0 === strpos( $block['blockName'], 'divi/' ) && false !== strpos( $html, '[gl_' ) ) {
+		$html = do_shortcode( $html );
+	}
+	return $html;
+}, 10, 2 );
+
+/**
+ * News lightbox container (output on every page, independent of header/footer source).
+ */
+add_action( 'wp_footer', function () {
+	?>
+	<div class="gl-modal" id="gl-modal" aria-hidden="true">
+		<div class="gl-modal__content">
+			<img class="gl-modal__image" src="" alt="<?php esc_attr_e( 'Enlarged', 'giacomo-licata' ); ?>" />
+			<button type="button" class="gl-modal__close"><?php esc_html_e( 'Close', 'giacomo-licata' ); ?></button>
+		</div>
+	</div>
+	<?php
+}, 5 );
+
+/**
  * Social links shown in the footer (filterable).
  */
 function gl_social_links() {

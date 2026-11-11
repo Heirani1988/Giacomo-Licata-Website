@@ -8,7 +8,8 @@
 	'use strict';
 
 	// Header scroll state.
-	var header = document.getElementById('gl-header');
+	// Coded header (#gl-header) or Divi Theme Builder header section (.gl-header).
+	var header = document.querySelector('.gl-header');
 	if (header) {
 		var onScroll = function () {
 			header.classList.toggle('is-scrolled', window.scrollY > 50);
