@@ -78,7 +78,13 @@ body.gl-site .gl-header {
 	z-index: 1000;
 	transition: background-color 0.3s ease;
 }
-body.gl-site .gl-header.is-scrolled { background-color: #242424 !important; }
+/* Dark once scrolled. Divi writes `.et-l--header>.et_builder_inner_content .et_pb_section.et_pb_section_0_tb_header
+   { background-color: rgba(0,0,0,0) !important }` from the section's own background setting, so this
+   selector has to be more specific than that one to win. */
+body.gl-site .gl-header.is-scrolled,
+html body.gl-site .et-l--header > .et_builder_inner_content .et_pb_section.gl-header.is-scrolled {
+	background-color: #242424 !important;
+}
 body.gl-site.admin-bar .gl-header { top: 32px; }
 
 /* Current page in the menu (original: brown with a soft shadow). */
