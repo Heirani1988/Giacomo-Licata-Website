@@ -135,9 +135,15 @@ function gl_text_shadow() {
 	);
 }
 
-/** Font value object. lineHeight "normal" matches the original (browser default). */
+/** Brand colours: brown accent, and a lighter tint of it for text on the dark background. */
+define( 'GL_ACCENT', '#996e52' );
+define( 'GL_ACCENT_DARK', '#7d5940' );
+define( 'GL_ACCENT_LIGHT', '#c8a27c' );
+
+/** Font value object (Roboto, loaded by Divi as a web font). */
 function gl_font( $size, $color, $weight = '400', $align = null, array $extra = array() ) {
 	$f = array(
+		'family'     => 'Roboto',
 		'size'       => $size,
 		'color'      => $color,
 		'weight'     => $weight,
@@ -146,7 +152,7 @@ function gl_font( $size, $color, $weight = '400', $align = null, array $extra = 
 	if ( $align ) {
 		$f['textAlign'] = $align;
 	}
-	return $f + $extra;
+	return array_merge( $f, $extra );
 }
 
 /* =========================================================================
@@ -168,9 +174,9 @@ function gl_page_section( $label, array $rows, $phone_padding = true ) {
 		array(
 			'background' => gl_v( array( 'color' => 'rgba(0,0,0,0)' ) ),
 			'spacing'    => gl_v(
-				array( 'padding' => gl_box4( '96px', '32px', '32px', '32px' ) ),
+				array( 'padding' => gl_box4( '96px', '32px', '64px', '32px' ) ),
 				null,
-				$phone_padding ? array( 'padding' => gl_box4( '112px', '32px', '16px', '32px' ) ) : null
+				$phone_padding ? array( 'padding' => gl_box4( '112px', '24px', '40px', '24px' ) ) : null
 			),
 		)
 	);
@@ -185,7 +191,8 @@ function gl_page_section( $label, array $rows, $phone_padding = true ) {
 function gl_row( $label, array $columns, array $opts = array() ) {
 	$opts   = array_merge(
 		array(
-			'gap'           => '16px',
+			'gap'           => '24px',
+			'wrap_tablet'   => false,
 			'margin_bottom' => '0px',
 			'margin_top'    => '0px',
 			'stack'         => true,
@@ -203,7 +210,7 @@ function gl_row( $label, array $columns, array $opts = array() ) {
 		array(
 			'layout'  => gl_v(
 				array_merge( array( 'flexWrap' => 'nowrap', 'columnGap' => $opts['gap'], 'rowGap' => $opts['gap'], 'alignItems' => 'stretch' ), $opts['layout'] ),
-				array( 'flexWrap' => 'nowrap' ),
+				array( 'flexWrap' => $opts['wrap_tablet'] ? 'wrap' : 'nowrap' ),
 				array( 'flexWrap' => $opts['stack'] ? 'wrap' : 'nowrap' )
 			),
 			'sizing'  => gl_v( array( 'width' => '100%', 'maxWidth' => $opts['max_width'] ) ),
@@ -222,13 +229,15 @@ function gl_row( $label, array $columns, array $opts = array() ) {
 /**
  * Column. $span is the desktop width in 24ths (8 = 1/3, 12 = 1/2, 16 = 2/3, 24 = full).
  */
-function gl_col( $span, array $children, array $layout = array(), $class = '', $stack = true ) {
+function gl_col( $span, array $children, array $layout = array(), $class = '', $stack = true, $small_span = null ) {
 	$module               = gl_meta( '', $class );
+	$tablet               = $small_span ? $small_span : $span;
+	$phone                = $small_span ? $small_span : ( $stack ? 24 : $span );
 	$module['decoration'] = array(
 		'sizing'  => gl_v(
 			array( 'flexType' => $span . '_24' ),
-			array( 'flexType' => $span . '_24' ),
-			array( 'flexType' => $stack ? '24_24' : $span . '_24' )
+			array( 'flexType' => $tablet . '_24' ),
+			array( 'flexType' => $phone . '_24' )
 		),
 		'spacing' => gl_v( array( 'padding' => gl_box4( '0px' ) ) ),
 	);
@@ -451,7 +460,7 @@ function gl_box( $title, $html = '', $image = '', array $opts = array() ) {
 			wp_strip_all_tags( $title ),
 			array(
 				'sizing' => gl_v( array( 'width' => '100%', 'height' => '200px' ) ),
-				'border' => gl_v( array( 'radius' => gl_radius( '8px', '8px', '0px', '0px' ) ) ),
+				'border' => gl_v( array( 'radius' => gl_radius( '12px', '12px', '0px', '0px' ) ) ),
 			),
 			array( 'fit' => gl_v( array( 'objectFit' => 'cover', 'objectPosition' => 'center center' ) ) )
 		);
@@ -469,7 +478,7 @@ function gl_box( $title, $html = '', $image = '', array $opts = array() ) {
 						'padding' => array( 'top' => '0px', 'bottom' => '8px' ),
 					)
 				),
-				'border'  => gl_v( array( 'styles' => array( 'bottom' => array( 'width' => '2px', 'color' => '#555555', 'style' => 'solid' ) ) ) ),
+				'border'  => gl_v( array( 'styles' => array( 'bottom' => array( 'width' => '2px', 'color' => GL_ACCENT, 'style' => 'solid' ) ) ) ),
 			)
 		);
 	}
@@ -478,12 +487,17 @@ function gl_box( $title, $html = '', $image = '', array $opts = array() ) {
 		$children[] = gl_text(
 			'Content',
 			$html,
-			gl_font( '16px', '#cccccc', '400', $opts['align'] ),
-			array( 'spacing' => gl_v( array( 'padding' => gl_box4( '16px', '0px' ) ) ) ),
+			gl_font( '16px', '#cccccc', '400', $opts['align'], array( 'lineHeight' => '1.6em' ) ),
+			array( 'spacing' => gl_v( array( 'padding' => gl_box4( '8px', '0px' ) ) ) ),
 			'',
-			gl_body_deco() + array(
+			array(
+				'bodyFont'    => array(
+					'body' => array( 'list' => gl_v( array( 'paragraphSpacing' => '10px' ) ) ),
+					'link' => array( 'font' => gl_v( array( 'color' => GL_ACCENT_LIGHT, 'weight' => '700' ) ) ),
+				),
 				'headingFont' => array(
-					'h2' => array( 'font' => gl_v( gl_font( '24px', '#cccccc', '700' ) ) ),
+					'h2' => array( 'font' => gl_v( gl_font( '22px', '#e6e6e6', '700' ) ) ),
+					'h3' => array( 'font' => gl_v( gl_font( '18px', '#e6e6e6', '700' ) ) ),
 				),
 			)
 		);
@@ -491,14 +505,14 @@ function gl_box( $title, $html = '', $image = '', array $opts = array() ) {
 
 	$deco = array(
 		'background' => gl_v( array( 'color' => '#333333' ) ),
-		'spacing'    => gl_v( array( 'padding' => gl_box4( '16px' ) ) ),
 		'border'     => gl_v(
 			array(
 				'styles' => array( 'all' => array( 'width' => '1px', 'color' => '#444444', 'style' => 'solid' ) ),
-				'radius' => gl_radius( '8px' ),
+				'radius' => gl_radius( '12px' ),
 			)
 		),
-		'boxShadow'  => gl_shadow( '0px', '4px', '8px', '0px', 'rgba(0,0,0,0.2)' ),
+		'spacing'    => gl_v( array( 'padding' => gl_box4( '24px' ) ) ),
+		'boxShadow'  => gl_shadow( '0px', '8px', '24px', '0px', 'rgba(0,0,0,0.3)' ),
 		'layout'     => gl_v( array( 'flexDirection' => 'column', 'alignItems' => 'stretch' ) ),
 	);
 	if ( $opts['grow'] ) {
@@ -508,15 +522,191 @@ function gl_box( $title, $html = '', $image = '', array $opts = array() ) {
 	return gl_group( wp_strip_all_tags( $title ? $title : 'Box' ), $children, $deco );
 }
 
-/** Page heading in off-white (#fbf7f5), centered. */
-function gl_section_title( $text, $level = 'h2', $margin_top = '0px', $margin_bottom = '32px' ) {
-	$size = 'h1' === $level ? '32px' : '24px';
-	return gl_heading(
-		$text,
-		$level,
-		gl_font( $size, '#fbf7f5', '700', 'center' ),
-		array( 'spacing' => gl_v( array( 'margin' => array( 'top' => $margin_top, 'bottom' => $margin_bottom ) ) ) )
+/**
+ * Section heading in off-white (#fbf7f5), centered, with a short brown divider
+ * underneath. Returns two modules (Heading + Divider).
+ */
+function gl_title( $text, $level = 'h2', $margin_top = '0px', $margin_bottom = '32px' ) {
+	$size = 'h1' === $level ? '32px' : '26px';
+	return array(
+		gl_heading(
+			$text,
+			$level,
+			gl_font( $size, '#fbf7f5', '700', 'center', array( 'letterSpacing' => '2px' ) ),
+			array( 'spacing' => gl_v( array( 'margin' => array( 'top' => $margin_top, 'bottom' => '12px' ) ) ) )
+		),
+		gl_divider( $margin_bottom ),
 	);
+}
+
+/** Short brown line (native Divider module), centered. */
+function gl_divider( $margin_bottom = '32px' ) {
+	return gl_d5_block(
+		'divi/divider',
+		array(
+			'divider' => array(
+				'advanced' => array(
+					'line' => gl_v(
+						array(
+							'show'     => 'on',
+							'color'    => GL_ACCENT,
+							'style'    => 'solid',
+							'position' => 'top',
+							'weight'   => '3px',
+						)
+					),
+				),
+			),
+			'module'  => gl_meta( 'Accent line' ) + array(
+				'decoration' => array(
+					'sizing'  => gl_v( array( 'width' => '64px', 'maxWidth' => '64px', 'height' => '3px', 'alignSelf' => 'center' ) ),
+					'spacing' => gl_v( array( 'margin' => array( 'top' => '0px', 'bottom' => $margin_bottom ) ) ),
+				),
+			),
+		)
+	);
+}
+
+/** Brand button (native Button module): brown, white text, rounded. */
+function gl_button( $text, $url, $align = 'left', $target = 'off' ) {
+	return gl_d5_block(
+		'divi/button',
+		array(
+			'button' => array(
+				'innerContent' => gl_v( array( 'text' => $text, 'linkUrl' => $url, 'linkTarget' => $target ) ),
+				'decoration'   => array(
+					'background' => gl_v( array( 'color' => GL_ACCENT ), null, null, array( 'hover' => array( 'color' => GL_ACCENT_DARK ) ) ),
+					'border'     => gl_v(
+						array(
+							'styles' => array( 'all' => array( 'width' => '0px', 'color' => GL_ACCENT, 'style' => 'solid' ) ),
+							'radius' => gl_radius( '8px' ),
+						)
+					),
+					'font'       => array(
+						'font' => gl_v(
+							array(
+								'family'        => 'Roboto',
+								'size'          => '15px',
+								'weight'        => '700',
+								'color'         => '#ffffff',
+								'letterSpacing' => '1px',
+								'lineHeight'    => '1.2em',
+							),
+							null,
+							null,
+							array( 'hover' => array( 'color' => '#ffffff' ) )
+						),
+					),
+				),
+			),
+			'module' => gl_meta( 'Button: ' . $text ) + array(
+				'advanced'   => array( 'alignment' => gl_v( $align, $align, $align ) ),
+				'decoration' => array(
+					'spacing' => gl_v( array( 'padding' => gl_box4( '12px', '24px' ), 'margin' => gl_box4( '0px' ) ) ),
+				),
+			),
+		)
+	);
+}
+
+/** Row of buttons side by side (a Group laid out as a row). */
+function gl_buttons( array $buttons, $justify = 'center', $margin_top = '32px' ) {
+	return gl_group(
+		'Buttons',
+		$buttons,
+		array(
+			'layout'  => gl_v(
+				array( 'flexDirection' => 'row', 'flexWrap' => 'wrap', 'justifyContent' => $justify, 'alignItems' => 'center', 'columnGap' => '16px', 'rowGap' => '12px' )
+			),
+			'spacing' => gl_v( array( 'margin' => array( 'top' => $margin_top, 'bottom' => '0px' ) ) ),
+		)
+	);
+}
+
+/** Add modules to the end of a box (Group). */
+function gl_box_append( array $box, array $modules ) {
+	foreach ( $modules as $m ) {
+		$box['innerBlocks'][]  = $m;
+		$box['innerContent'][] = null;
+	}
+	return $box;
+}
+
+/* ---- shared content ------------------------------------------------------ */
+
+/** Opening times (confirmed by the shop). */
+function gl_hours_html( $extra = true ) {
+	$lines = array( 'Mon-Fri: 9am - 5:30pm', 'Sat: 8am - 5pm', 'Sun: Closed' );
+	if ( $extra ) {
+		array_unshift( $lines, 'Open Six Days A Week Except For Bank Holidays' );
+		$lines[] = 'OAP Rates Monday to Thursday';
+		$lines[] = 'No Appointment Needed';
+	}
+	return gl_html_ps( $lines );
+}
+
+/** Current price list (all prices "from"). [name, price, section heading before it]. */
+function gl_prices() {
+	return array(
+		array( 'Men\'s Hair Cut', '15.00' ),
+		array( 'Skin-Fade', '18.00' ),
+		array( 'Boys (Under 11)', '14.00' ),
+		array( 'W-C-B', '15.50' ),
+		array( 'O.A.P', '10.00' ),
+		array( 'O.A.P (WCB)', '10.50' ),
+		array( 'Flattop', '16.00' ),
+		array( 'Shave', '16.50' ),
+		array( 'Restyling', '17.00' ),
+		array( 'Beard Trim', '7.00' ),
+		array( '1 Ear', '20.00', 'Ear Piercing' ),
+		array( '2 Ears', '35.00' ),
+	);
+}
+
+/** Price list markup: name left, price right, dotted leader (see .gl-price-list in site.css). */
+function gl_price_list_html( array $only = array() ) {
+	$html = '<ul class="gl-price-list">';
+	foreach ( gl_prices() as $item ) {
+		if ( $only && ! in_array( $item[0], $only, true ) ) {
+			continue;
+		}
+		if ( ! $only && ! empty( $item[2] ) ) {
+			$html .= '</ul><h3>' . $item[2] . '</h3><ul class="gl-price-list">';
+		}
+		$html .= '<li><span>' . $item[0] . '</span><span>&#163;' . $item[1] . '</span></li>';
+	}
+	return $html . '</ul>';
+}
+
+/** Google Maps embed (Code module content). */
+function gl_map_html( $height = '450px' ) {
+	return '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2483.999317481905!2d-2.576987623075407!3d51.49488001161741!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x487191dd79204213%3A0xc3b41a8c31805052!2sGiacomo%20Licata!5e0!3m2!1sen!2suk!4v1720784502194!5m2!1sen!2suk" style="width:100%;height:' . $height . ';border:0;border-radius:12px;display:block;" allowfullscreen="" loading="lazy" title="Giacomo Licata on Google Maps"></iframe>';
+}
+
+/** Directions link (Google Maps). */
+function gl_directions_url() {
+	return 'https://www.google.com/maps/dir/?api=1&destination=Giacomo+Licata+374+Filton+Avenue+Bristol+BS7+0BE';
+}
+
+/** The team: 4 in a row on desktop, 2x2 on tablets/phones. */
+function gl_team_rows() {
+	$staff = array(
+		array( 'Giacomo', 'Owner/Barber', 'giacomo-sm.png' ),
+		array( 'Carmelo', 'Barber', 'carmelo-sm.png' ),
+		array( 'Domenico', 'Barber', 'domenico-sm.png' ),
+		array( 'Alec', 'Barber', 'alec-sm.png' ),
+	);
+	$cells = array();
+	foreach ( $staff as $s ) {
+		$cells[] = gl_hover_card(
+			$s[2],
+			$s[0],
+			'<h3>' . $s[1] . '</h3><p>' . $s[0] . '</p>',
+			'',
+			array( 'border' => gl_v( array( 'radius' => gl_radius( '12px' ) ) ) )
+		);
+	}
+	return gl_grid_rows( 'Team', $cells, '16px', true, 4, 12 );
 }
 
 /** Top row used on About/Prices/Products/Profiles: box on the left, slider on the right. */
@@ -562,15 +752,28 @@ function gl_hover_card( $file, $alt, $overlay_html, $link = '', array $image_dec
 	);
 }
 
-/** Grid of items as rows of three columns. */
-function gl_grid_rows( $label, array $cells, $gap = '16px', $stack = true ) {
+/**
+ * Grid of items as rows of $per_row columns. $small_span (in 24ths) sets the
+ * column width on tablets/phones, e.g. 12 = two per line.
+ */
+function gl_grid_rows( $label, array $cells, $gap = '16px', $stack = true, $per_row = 3, $small_span = null ) {
 	$rows = array();
-	foreach ( array_chunk( $cells, 3 ) as $n => $chunk ) {
+	$span = (int) ( 24 / $per_row );
+	foreach ( array_chunk( $cells, $per_row ) as $n => $chunk ) {
 		$cols = array();
-		for ( $i = 0; $i < 3; $i++ ) {
-			$cols[] = gl_col( 8, isset( $chunk[ $i ] ) ? array( $chunk[ $i ] ) : array(), array(), '', $stack );
+		for ( $i = 0; $i < $per_row; $i++ ) {
+			$cols[] = gl_col( $span, isset( $chunk[ $i ] ) ? array( $chunk[ $i ] ) : array(), array(), '', $stack, $small_span );
 		}
-		$rows[] = gl_row( $label . ' ' . ( $n + 1 ), $cols, array( 'gap' => $gap, 'margin_bottom' => $gap, 'stack' => $stack ) );
+		$rows[] = gl_row(
+			$label . ' ' . ( $n + 1 ),
+			$cols,
+			array(
+				'gap'           => $gap,
+				'margin_bottom' => $gap,
+				'stack'         => $stack,
+				'wrap_tablet'   => (bool) $small_span,
+			)
+		);
 	}
 	return $rows;
 }
@@ -598,76 +801,179 @@ function gl_page_definitions() {
 
 function gl_page_home() {
 	$line = function ( $text, $level, $size, $phone ) {
-		return gl_heading(
+		$m = gl_heading(
 			$text,
 			$level,
 			gl_font( $size, '#ffffff', '800', 'center' ),
-			array(
-				'spacing' => gl_v( array( 'margin' => gl_box4( '0px' ), 'padding' => gl_box4( '0px' ) ) ),
-			),
+			array( 'spacing' => gl_v( array( 'margin' => gl_box4( '0px' ), 'padding' => gl_box4( '0px' ) ) ) ),
 			'',
 			true
 		);
+		$m['attrs']['title']['decoration']['font']['font']['phone'] = array( 'value' => array( 'size' => $phone, 'textAlign' => 'center' ) );
+		return $m;
 	};
 
-	$modules = array(
-		$line( 'WHERE TRADITION MEETS TREND', 'h2', '36px', '18px' ),
-		$line( 'GIACOMO LICATA', 'h1', '128px', '64px' ),
-		$line( 'Est. 1986', 'h2', '64px', '32px' ),
-		$line( '374 FILTON AVENUE, HORFIELD, BRISTOL, BS7 0BE', 'h3', '36px', '18px' ),
-		$line( '0117 923 6663', 'h3', '36px', '18px' ),
-	);
-	// Phone font sizes.
-	$phone = array( '18px', '64px', '32px', '18px', '18px' );
-	foreach ( $modules as $i => &$m ) {
-		$m['attrs']['title']['decoration']['font']['font']['phone'] = array( 'value' => array( 'size' => $phone[ $i ], 'textAlign' => 'center' ) );
-	}
-	unset( $m );
-
-	return array(
-		gl_section(
-			'Hero',
-			array(
-				gl_row(
-					'Hero',
-					array( gl_col( 24, $modules, array( 'flexDirection' => 'column', 'justifyContent' => 'center', 'alignItems' => 'center', 'rowGap' => '0px' ) ) ),
-					array(
-						'max_width' => '100%',
-						'gap'       => '0px',
-						'deco'      => array( 'sizing' => gl_v( array( 'minHeight' => '100vh' ) ) ),
-					)
-				),
-			),
-			array(
-				'background' => gl_v(
-					array(
-						'color' => '#242424',
-						'image' => array(
-							'url'      => '{{img:stockbarberimage.jpg}}',
-							'size'     => 'cover',
-							'position' => 'center center',
-							'repeat'   => 'no-repeat',
+	// 1. Hero (no phone number), with a soft dark overlay and two buttons.
+	$hero = gl_section(
+		'Hero',
+		array(
+			gl_row(
+				'Hero',
+				array(
+					gl_col(
+						24,
+						array(
+							$line( 'WHERE TRADITION MEETS TREND', 'h2', '36px', '18px' ),
+							$line( 'GIACOMO LICATA', 'h1', '128px', '56px' ),
+							$line( 'Est. 1986', 'h2', '64px', '32px' ),
+							$line( '374 FILTON AVENUE, HORFIELD, BRISTOL, BS7 0BE', 'h3', '28px', '16px' ),
+							gl_buttons(
+								array(
+									gl_button( 'OUR PRICES', home_url( '/prices/' ), 'center' ),
+									gl_button( 'FIND US', home_url( '/location/' ), 'center' ),
+								)
+							),
 						),
-					)
+						array( 'flexDirection' => 'column', 'justifyContent' => 'center', 'alignItems' => 'center' )
+					),
 				),
-				'spacing'    => gl_v( array( 'padding' => gl_box4( '0px' ) ) ),
-				'sizing'     => gl_v( array( 'minHeight' => '100vh' ) ),
+				array(
+					'max_width' => '100%',
+					'gap'       => '0px',
+					'deco'      => array(
+						'sizing'  => gl_v( array( 'minHeight' => '100vh' ) ),
+						'spacing' => gl_v( array( 'padding' => gl_box4( '80px', '24px' ) ) ),
+					),
+				)
+			),
+		),
+		array(
+			'background' => gl_v(
+				array(
+					'color'    => '#242424',
+					'image'    => array(
+						'url'      => '{{img:stockbarberimage.jpg}}',
+						'size'     => 'cover',
+						'position' => 'center center',
+						'repeat'   => 'no-repeat',
+					),
+					'gradient' => array(
+						'enabled'   => 'on',
+						'type'      => 'linear',
+						'direction' => '180deg',
+						'stops'     => array(
+							array( 'position' => 0, 'color' => 'rgba(0,0,0,0.25)' ),
+							array( 'position' => 100, 'color' => 'rgba(0,0,0,0.55)' ),
+						),
+					),
+				)
+			),
+			'spacing'    => gl_v( array( 'padding' => gl_box4( '0px' ) ) ),
+			'sizing'     => gl_v( array( 'minHeight' => '100vh' ) ),
+		)
+	);
+
+	$content_section = function ( $label, array $rows, $top = '80px' ) {
+		return gl_section(
+			$label,
+			$rows,
+			array(
+				'background' => gl_v( array( 'color' => 'rgba(0,0,0,0)' ) ),
+				'spacing'    => gl_v(
+					array( 'padding' => gl_box4( $top, '32px', '0px', '32px' ) ),
+					null,
+					array( 'padding' => gl_box4( '56px', '24px', '0px', '24px' ) )
+				),
+			)
+		);
+	};
+
+	// 2. Welcome: opening times / prices / services.
+	$intro = gl_text(
+		'Intro',
+		'<p>A traditional barber shop in Horfield, Bristol, since 1986. No appointment needed &#8211; just walk in.</p>',
+		gl_font( '18px', '#e6e6e6', '400', 'center', array( 'lineHeight' => '1.6em' ) ),
+		array( 'spacing' => gl_v( array( 'margin' => array( 'top' => '0px', 'bottom' => '40px' ) ) ) )
+	);
+	$hours    = gl_box( 'Opening Times', gl_hours_html() );
+	$prices   = gl_box_append(
+		gl_box( 'Prices', '<p>All prices from:</p>' . gl_price_list_html( array( 'Men\'s Hair Cut', 'Skin-Fade', 'Beard Trim' ) ) . '<p><strong>CASH ONLY</strong></p>' ),
+		array( gl_buttons( array( gl_button( 'FULL PRICE LIST', home_url( '/prices/' ), 'left' ) ), 'flex-start', '16px' ) )
+	);
+	$services = gl_box_append(
+		gl_box(
+			'Services',
+			gl_html_ps(
+				array(
+					'As well as gentlemen\'s haircuts we offer ear piercing for men and women, or when England play football why not have St Georges cross painted on your head &#8211; don\'t worry, it will wash off!',
+					'We also stock the full Proraso range of aftershave &amp; toiletries.',
+				)
 			)
 		),
+		array( gl_buttons( array( gl_button( 'OUR PRODUCTS', home_url( '/products/' ), 'left' ) ), 'flex-start', '16px' ) )
 	);
+
+	$welcome = $content_section(
+		'Welcome',
+		array(
+			gl_row( 'Heading', array( gl_col( 24, array_merge( gl_title( 'WELCOME', 'h2', '0px', '24px' ), array( $intro ) ) ) ) ),
+			gl_row(
+				'Cards',
+				array(
+					gl_col( 8, array( $hours ) ),
+					gl_col( 8, array( $prices ) ),
+					gl_col( 8, array( $services ) ),
+				)
+			),
+		)
+	);
+
+	// 3. Meet the team.
+	$team = $content_section(
+		'Team',
+		array_merge(
+			array( gl_row( 'Heading', array( gl_col( 24, gl_title( 'MEET THE TEAM' ) ) ) ) ),
+			gl_team_rows(),
+			array( gl_row( 'Button', array( gl_col( 24, array( gl_buttons( array( gl_button( 'MEET THE TEAM', home_url( '/profiles/' ), 'center' ) ), 'center', '8px' ) ) ) ) ) )
+		)
+	);
+
+	// 4. Find us.
+	$find = gl_section(
+		'Find us',
+		array(
+			gl_row( 'Heading', array( gl_col( 24, gl_title( 'FIND US' ) ) ) ),
+			gl_row(
+				'Address & map',
+				array(
+					gl_col(
+						8,
+						array(
+							gl_box_append(
+								gl_box( 'Visit Us', '<p>374 Filton Avenue<br />Horfield, Bristol<br />BS7 0BE</p><h3>Opening Times</h3>' . gl_hours_html( false ) ),
+								array( gl_buttons( array( gl_button( 'GET DIRECTIONS', gl_directions_url(), 'left', 'on' ) ), 'flex-start', '16px' ) )
+							),
+						)
+					),
+					gl_col( 16, array( gl_code( 'Google map (embed)', gl_map_html( '100%' ) ) ), array( 'alignItems' => 'stretch' ), 'gl-map-col' ),
+				)
+			),
+		),
+		array(
+			'background' => gl_v( array( 'color' => 'rgba(0,0,0,0)' ) ),
+			'spacing'    => gl_v(
+				array( 'padding' => gl_box4( '80px', '32px', '80px', '32px' ) ),
+				null,
+				array( 'padding' => gl_box4( '56px', '24px', '56px', '24px' ) )
+			),
+		)
+	);
+
+	return array( $hero, $welcome, $team, $find );
 }
 
 function gl_page_about() {
-	$opening = gl_html_ps(
-		array(
-			'Open Six Days A Week Except For Bank Holidays',
-			'Mon-Fri: 9am - 5:30pm',
-			'Sat: 8am - 5pm',
-			'Sun: Closed',
-			'OAP Rates Monday to Thursday',
-			'No Appointment Needed',
-		)
-	);
+	$opening = gl_hours_html();
 	$help     = gl_html_ps(
 		array(
 			'We do wash hair at Giacomos and there is a small extra price to pay. Clean hair makes cutting and creating your style easier for us and gives you a better finish to your cut. If you do not want a wash we kindly ask that you wash any gel, wax or spray from your hair before you visit us.',
@@ -712,27 +1018,10 @@ function gl_page_about() {
 }
 
 function gl_page_prices() {
-	$prices = gl_html_ps(
-		array(
-			'Men\'s Haircut - &#163;14.00',
-			'Skin-Fade - &#163;16.50',
-			'Boys (under 11) - &#163;13.00',
-			'W-C-B - &#163;13.50',
-			'O.A.P - &#163;9.50',
-			'O.A.P (WCB)',
-			'Flattop - &#163;15.00',
-			'Shave - &#163;16.50',
-			'Restyling - &#163;16.50',
-			'Beard Trim - &#163;6.00',
-			'<strong>Ear Piercing</strong>',
-			'1 Ear - &#163;20.00',
-			'2 Ears - &#163;35.00',
-			'<strong>CASH ONLY</strong>',
-			'All prices are subject to change depending on length &amp; style required',
-			'*OAP haircuts Mon - Thurs',
-			'**Cut throat shaves are by appointment only please',
-		)
-	);
+	$prices = '<p class="gl-price-from">All prices from</p>'
+		. gl_price_list_html()
+		. '<p><strong>CASH ONLY</strong></p>'
+		. '<p class="gl-small">All prices are subject to change depending on length &amp; style required<br />*OAP haircuts Mon - Thurs<br />**Cut throat shaves are by appointment only please</p>';
 	$services = gl_html_ps(
 		array(
 			'As well as gentlemen\'s haircuts we are pleased to offer ear piercing for men and women, or when England play football why not have St Georges cross painted on your head, but don\'t worry, it will wash off!',
@@ -740,7 +1029,7 @@ function gl_page_prices() {
 			'Come and see us for yourself, enjoy our warm &amp; friendly atmosphere and tell a friend!',
 		)
 	);
-	$special  = gl_html_ps( array( 'Special bookings can be made for weddings, stag do\'s, birthday\'s and special occassions. For more information contact Giacomo on 0117 923 6663.' ) );
+	$special  = gl_html_ps( array( 'Special bookings can be made for weddings, stag do\'s, birthdays and special occasions. For more information contact Giacomo on 0117 923 6663.' ) );
 
 	return array(
 		gl_page_section(
@@ -748,7 +1037,7 @@ function gl_page_prices() {
 			array(
 				gl_top_row_with_slider(
 					'Aftershave &amp; Toiletries',
-					'<p>We now stock a wide range of Proraso Aftershare &amp; Toiletries, please click here for more information</p>',
+					'<p>We now stock a wide range of Proraso Aftershave &amp; Toiletries, please <a href="' . esc_url( home_url( '/products/' ) ) . '">click here</a> for more information.</p>',
 					array( 'pricesImage1.png', 'pricesImage2.png' )
 				),
 				gl_row(
@@ -795,21 +1084,35 @@ function gl_page_products() {
 		$cells[] = gl_group(
 			wp_strip_all_tags( $p[1] ),
 			array(
-				gl_image(
-					$p[0],
-					'Product ' . ( $i + 1 ),
+				// White panel with the whole product visible (no stretching).
+				gl_group(
+					'Photo panel',
 					array(
-						'sizing' => gl_v( array( 'width' => '100%', 'height' => '250px' ) ),
-						'border' => gl_v( array( 'radius' => gl_radius( '8px' ) ) ),
+						gl_image(
+							$p[0],
+							'Product ' . ( $i + 1 ),
+							array( 'sizing' => gl_v( array( 'width' => '100%', 'height' => '226px' ) ) ),
+							array( 'fit' => gl_v( array( 'objectFit' => 'contain' ) ) )
+						),
 					),
-					array( 'fit' => gl_v( array( 'objectFit' => 'fill' ) ) )
+					array(
+						'background' => gl_v( array( 'color' => '#ffffff' ) ),
+						'border'     => gl_v( array( 'radius' => gl_radius( '12px' ) ) ),
+						'spacing'    => gl_v( array( 'padding' => gl_box4( '12px' ) ) ),
+					)
 				),
-				gl_heading( $p[1], 'h3', gl_font( '18.72px', '#fbf7f5', '700', 'center' ), array( 'spacing' => gl_v( array( 'margin' => array( 'top' => '8px', 'bottom' => '0px' ) ) ) ) ),
-				gl_text( 'Price', '<p>' . $p[2] . '</p>', gl_font( '16px', '#fbf7f5', '400', 'center' ) ),
+				gl_heading( $p[1], 'h3', gl_font( '18px', '#fbf7f5', '700', 'center' ), array( 'spacing' => gl_v( array( 'margin' => array( 'top' => '14px', 'bottom' => '4px' ) ) ) ) ),
+				gl_text( 'Price', '<p>' . $p[2] . '</p>', gl_font( '17px', GL_ACCENT_LIGHT, '700', 'center' ) ),
 			),
 			array(
-				'sizing' => gl_v( array( 'width' => '100%' ) ),
-				'layout' => gl_v( array( 'flexDirection' => 'column', 'rowGap' => '0px' ) ),
+				'sizing'     => gl_v( array( 'width' => '100%' ) ),
+				'layout'     => gl_v( array( 'flexDirection' => 'column', 'rowGap' => '0px' ) ),
+				'spacing'    => gl_v( array( 'padding' => array( 'bottom' => '16px' ) ) ),
+				'border'     => gl_v( array( 'radius' => gl_radius( '12px' ) ) ),
+				'boxShadow'  => array_replace_recursive(
+					gl_shadow( '0px', '0px', '0px', '0px', 'rgba(0,0,0,0)' ),
+					array( 'desktop' => array( 'hover' => array( 'style' => 'preset1', 'horizontal' => '0px', 'vertical' => '10px', 'blur' => '24px', 'spread' => '0px', 'position' => 'outer', 'color' => 'rgba(0,0,0,0.5)' ) ) )
+				),
 			)
 		);
 	}
@@ -824,9 +1127,9 @@ function gl_page_products() {
 						'<p>Explore our range of premium products including aftershaves, toiletries, and more. Click on any product to learn more.</p>',
 						array( array( 'productsImage1.png', 'Proraso' ), array( 'redone2-bckgroundremoved.png', 'Product 2' ) )
 					),
-					gl_row( 'Heading', array( gl_col( 24, array( gl_section_title( 'OUR PRODUCTS' ) ) ) ) ),
+					gl_row( 'Heading', array( gl_col( 24, gl_title( 'OUR PRODUCTS', 'h2', '16px' ) ) ) ),
 				),
-				gl_grid_rows( 'Products', $cells )
+				gl_grid_rows( 'Products', $cells, '24px' )
 			)
 		),
 	);
@@ -834,7 +1137,7 @@ function gl_page_products() {
 
 function gl_page_location() {
 	$address = '<p>374 Filton Avenue, Horfield, Bristol BS7 0BE</p><p>Telephone: 0117 923 6663</p>'
-		. '<h2>Opening Times</h2>' . gl_html_ps( array( 'Mon-Fri: 9am - 7pm', 'Sat: 9am - 5pm', 'Sun: Closed' ) );
+		. '<h3>Opening Times</h3>' . gl_hours_html( false );
 
 	$photo = gl_group(
 		'Shop photo',
@@ -854,15 +1157,15 @@ function gl_page_location() {
 			'border'     => gl_v(
 				array(
 					'styles' => array( 'all' => array( 'width' => '1px', 'color' => '#444444', 'style' => 'solid' ) ),
-					'radius' => gl_radius( '8px' ),
+					'radius' => gl_radius( '12px' ),
 				)
 			),
-			'boxShadow'  => gl_shadow( '0px', '4px', '8px', '0px', 'rgba(0,0,0,0.2)' ),
+			'boxShadow'  => gl_shadow( '0px', '8px', '24px', '0px', 'rgba(0,0,0,0.3)' ),
 			'sizing'     => gl_v( array( 'size' => array( 'flexGrow' ), 'width' => '100%' ) ),
 		)
 	);
 
-	$map = '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2483.999317481905!2d-2.576987623075407!3d51.49488001161741!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x487191dd79204213%3A0xc3b41a8c31805052!2sGiacomo%20Licata!5e0!3m2!1sen!2suk!4v1720784502194!5m2!1sen!2suk" style="width:100%;height:450px;border:0;border-radius:8px;" allowfullscreen="" loading="lazy" title="Giacomo Licata on Google Maps"></iframe>';
+	$map = gl_map_html();
 
 	return array(
 		gl_page_section(
@@ -871,7 +1174,15 @@ function gl_page_location() {
 				gl_row(
 					'Top',
 					array(
-						gl_col( 12, array( gl_box( 'Address', $address ) ) ),
+						gl_col(
+							12,
+							array(
+								gl_box_append(
+									gl_box( 'Address', $address ),
+									array( gl_buttons( array( gl_button( 'GET DIRECTIONS', gl_directions_url(), 'left', 'on' ) ), 'flex-start', '16px' ) )
+								),
+							)
+						),
 						gl_col( 12, array( $photo ) ),
 					),
 					array( 'margin_bottom' => '32px' )
@@ -882,7 +1193,8 @@ function gl_page_location() {
 						gl_col(
 							24,
 							array(
-								gl_section_title( 'FIND US ON MAPS', 'h1', '0px', '21.44px' ),
+								gl_title( 'FIND US ON MAPS', 'h1', '16px', '24px' )[0],
+								gl_divider( '24px' ),
 								gl_code( 'Google map (embed)', $map ),
 							)
 						),
@@ -894,27 +1206,6 @@ function gl_page_location() {
 }
 
 function gl_page_profiles() {
-	$staff = array(
-		array( 'Giacomo', 'Owner/Barber', 'giacomo-sm.png' ),
-		array( 'Carmelo', 'Barber', 'carmelo-sm.png' ),
-		array( 'Domenico', 'Barber', 'domenico-sm.png' ),
-		array( 'Alec', 'Barber', 'alec-sm.png' ),
-		array( 'Gavin', 'Barber', 'gavin_sm.png' ),
-	);
-	// Rounded outer corners of the grid, as in the original.
-	$corners = array(
-		0 => gl_radius( '8px', '0px', '0px', '0px' ),
-		2 => gl_radius( '0px', '8px', '0px', '0px' ),
-		3 => gl_radius( '0px', '0px', '0px', '8px' ),
-		5 => gl_radius( '0px', '0px', '8px', '0px' ),
-	);
-
-	$cells = array();
-	foreach ( $staff as $i => $s ) {
-		$radius  = isset( $corners[ $i ] ) ? array( 'border' => gl_v( array( 'radius' => $corners[ $i ] ) ) ) : array();
-		$cells[] = gl_hover_card( $s[2], $s[0], '<h3>' . $s[1] . '</h3><p>' . $s[0] . '</p>', '', $radius );
-	}
-
 	return array(
 		gl_page_section(
 			'Profiles',
@@ -922,12 +1213,12 @@ function gl_page_profiles() {
 				array(
 					gl_top_row_with_slider(
 						'Aftershave &amp; Toiletries',
-						'<p>We now stock a wide range of Proraso Aftershave &amp; Toiletries. Please click here for more information.</p>',
+						'<p>We now stock a wide range of Proraso Aftershave &amp; Toiletries. Please <a href="' . esc_url( home_url( '/products/' ) ) . '">click here</a> for more information.</p>',
 						array( 'profileImage1.png', 'profileImage2.png' )
 					),
-					gl_row( 'Heading', array( gl_col( 24, array( gl_section_title( 'MEET THE TEAM', 'h1' ) ) ) ) ),
+					gl_row( 'Heading', array( gl_col( 24, gl_title( 'MEET THE TEAM', 'h1', '16px' ) ) ) ),
 				),
-				gl_grid_rows( 'Team', $cells, '0px', false )
+				gl_team_rows()
 			)
 		),
 	);
@@ -981,7 +1272,7 @@ function gl_page_news() {
 				$prefix . ' ' . ( $i + 1 ),
 				'<h3>' . $item[2] . '</h3>',
 				$item[1],
-				array( 'border' => gl_v( array( 'radius' => gl_radius( '8px' ) ) ) )
+				array( 'border' => gl_v( array( 'radius' => gl_radius( '12px' ) ) ) )
 			);
 		}
 		return $cells;
@@ -1002,10 +1293,10 @@ function gl_page_news() {
 						),
 						array( 'margin_bottom' => '32px' )
 					),
-					gl_row( 'Heading: In the news', array( gl_col( 24, array( gl_section_title( 'IN THE NEWS' ) ) ) ) ),
+					gl_row( 'Heading: In the news', array( gl_col( 24, gl_title( 'IN THE NEWS', 'h2', '16px' ) ) ) ),
 				),
 				gl_grid_rows( 'News', $cards( $news, 'News' ), '16px', false ),
-				array( gl_row( 'Heading: Collection', array( gl_col( 24, array( gl_section_title( 'GIAC\'S COLLECTION', 'h2', '16px' ) ) ) ) ) ),
+				array( gl_row( 'Heading: Collection', array( gl_col( 24, gl_title( 'GIAC\'S COLLECTION', 'h2', '40px' ) ) ) ) ),
 				gl_grid_rows( 'Collection', $cards( $collection, 'Collection' ), '16px', false )
 			),
 			false
@@ -1023,6 +1314,7 @@ function gl_page_news() {
  */
 function gl_layout_header( $menu_id ) {
 	$nav_font = array(
+		'family'     => 'Roboto',
 		'size'       => '16px',
 		'color'      => '#ffffff',
 		'weight'     => '800',
@@ -1073,6 +1365,7 @@ function gl_layout_footer( $menu_id ) {
 	}
 
 	$nav_font = array(
+		'family'     => 'Roboto',
 		'size'       => '16px',
 		'color'      => '#ffffff',
 		'weight'     => '800',

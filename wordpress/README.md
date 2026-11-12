@@ -43,7 +43,10 @@ Everything is edited in the Divi Builder, as on any Divi site:
 |---|---|---|
 | Boxes (Opening Times, Prices, Services…) | **Group** (background, border, shadow) holding an **Image** (some boxes), a **Heading** and a **Text** | each page |
 | Sliders | **Slider** with one **Slide** per image (the image is the slide background) | About, Prices, Products, Profiles |
-| Home hero | **Section** background image + five **Heading** modules | Home |
+| Home hero | **Section** background image (with a dark gradient overlay), four **Heading** modules and two **Buttons** | Home |
+| Home sections | Welcome (Opening Times / Prices / Services boxes), Meet the team, Find us (address box + map) | Home |
+| Buttons and accent lines | **Button** modules (brown, #996e52) and short brown **Divider** modules under section titles | all pages |
+| Price list | **Text** module with a list: name left, price right (`gl-price-list`). Edit the list items to change prices | Prices, Home |
 | Products | Rows of 3 columns, each a **Group** of **Image + Heading + Text** (price) | Products |
 | Team / News / Collection grids | Rows of 3 columns, each a **Group** of **Image + Text** (the hover caption) | Profiles, News |
 | Videos | **Video** module (YouTube link) | About, News |
@@ -64,10 +67,23 @@ Divi has no setting for a few things on the original site, so the theme adds the
 | `gl-nav-item` | header menu Link module | current page shown in brown |
 | `gl-hover-card` / `gl-hover-overlay` | Team/News Group / its caption Text | dark tint + caption on hover; News cards open the lightbox |
 | `gl-footer-bar` | footer bar Row | 90% opacity, as on the original |
+| `gl-img-fill` | box and product Image modules | picture fills the fixed image height |
+| `gl-price-list`, `gl-price-from`, `gl-small` | inside the price Text modules | dotted-leader price list, "All prices from", small print |
+| `gl-map-col` | Home "Find us" map column | map fills the column height |
 
 The theme also has a coded header and footer (`header.php` / `footer.php`). They're used only when no Theme Builder header or footer is assigned, for example if you untick the Theme Builder box or disable them in the Theme Builder.
 
+## Content (November 2026 update)
+
+- **Prices** are from the shop's current price list, shown as "from" prices with CASH ONLY and the small print. The same list appears in short form on Home. Prices are defined once in `gl_prices()` in `inc/content.php` (used when the installer builds the pages). After installing, edit them in the Divi Builder.
+- **Team:** Giacomo, Carmelo, Domenico and Alec (Gavin removed). Four in a row on desktop, 2×2 on tablets and phones, on both Profiles and Home.
+- **Opening times:** Mon–Fri 9am–5:30pm, Sat 8am–5pm, Sun closed, everywhere.
+- **Fonts:** Roboto, loaded by Divi.
+
 ## How faithful is it?
+
+Since the November 2026 refresh, the site deliberately moves on from the original's look, with buttons, accent lines, a richer home page and cleaner product cards. The notes below describe the earlier one-to-one rebuild.
+
 
 The layout, text, colours and spacing follow the original. These parts deliberately differ because they now use Divi's own modules:
 - **Sliders** use Divi's arrows and dots, and the slides have a fixed height (412px on desktop) instead of following each image's shape.
