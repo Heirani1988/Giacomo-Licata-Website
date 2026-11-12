@@ -155,9 +155,8 @@ function gl_font( $size, $color, $weight = '400', $align = null, array $extra = 
 
 function gl_section( $label, array $rows, array $deco = array(), $class = '' ) {
 	$module = gl_meta( $label, $class );
-	if ( $deco ) {
-		$module['decoration'] = $deco;
-	}
+	// Divi 5 spaces a section's rows with its own default gutter; spacing here comes from row margins instead.
+	$module['decoration'] = array_replace_recursive( array( 'layout' => gl_v( array( 'rowGap' => '0px', 'columnGap' => '0px' ) ) ), $deco );
 	return gl_d5_block( 'divi/section', array( 'module' => $module ), $rows );
 }
 
@@ -233,15 +232,14 @@ function gl_col( $span, array $children, array $layout = array(), $class = '', $
 		),
 		'spacing' => gl_v( array( 'padding' => gl_box4( '0px' ) ) ),
 	);
-	if ( $layout ) {
-		$module['decoration']['layout'] = gl_v( $layout );
-	}
+	// Divi 5 spaces a column's modules with a default gutter; the original had none.
+	$module['decoration']['layout'] = gl_v( array_merge( array( 'rowGap' => '0px', 'columnGap' => '0px' ), $layout ) );
 	return gl_d5_block( 'divi/column', array( 'module' => $module ), $children );
 }
 
 function gl_group( $label, array $children, array $deco = array(), $class = '' ) {
 	$module               = gl_meta( $label, $class );
-	$module['decoration'] = $deco;
+	$module['decoration'] = array_replace_recursive( array( 'layout' => gl_v( array( 'rowGap' => '0px', 'columnGap' => '0px' ) ) ), $deco );
 	return gl_d5_block( 'divi/group', array( 'module' => $module ), $children );
 }
 
@@ -289,7 +287,16 @@ function gl_text( $label, $html, array $font, array $deco = array(), $class = ''
  * @param array $deco       module.decoration (sizing, border radius…).
  * @param array $image_deco image.decoration (fit…).
  */
-function gl_image( $file, $alt, array $deco = array(), array $image_deco = array(), $class = '', $label = '' ) {
+function gl_image( $file, $alt, array $deco = array(), array $image_deco = array(), $class = '', $label = '', $full = true ) {
+	// Divi applies an Image module's border/radius to the image wrapper, so keep it on the image element.
+	if ( isset( $deco['border'] ) ) {
+		$image_deco['border'] = $deco['border'];
+		unset( $deco['border'] );
+	}
+	// A fixed height (box/product images): the picture fills it (see .gl-img-fill in site.css).
+	if ( ! empty( $deco['sizing']['desktop']['value']['height'] ) ) {
+		$class = trim( $class . ' gl-img-fill' );
+	}
 	$image = array( 'innerContent' => gl_v( array( 'src' => '{{img:' . $file . '}}', 'alt' => $alt ) ) );
 	if ( $image_deco ) {
 		$image['decoration'] = $image_deco;
@@ -298,7 +305,11 @@ function gl_image( $file, $alt, array $deco = array(), array $image_deco = array
 		'divi/image',
 		array(
 			'image'  => $image,
-			'module' => gl_meta( $label ? $label : $alt, $class ) + ( $deco ? array( 'decoration' => $deco ) : array() ),
+			'module' => array_replace_recursive(
+				gl_meta( $label ? $label : $alt, $class ),
+				// Force Fullwidth: the picture spans its column, as in the original.
+				$full ? array( 'advanced' => array( 'sizing' => gl_v( array( 'forceFullwidth' => 'on' ) ) ) ) : array()
+			) + ( $deco ? array( 'decoration' => $deco ) : array() ),
 		)
 	);
 }
@@ -1027,7 +1038,7 @@ function gl_layout_header( $menu_id ) {
 					array(
 						gl_col(
 							12,
-							array( gl_image( 'giac-logo.png', 'Giacomo Licata Logo', array( 'sizing' => gl_v( array( 'width' => 'auto', 'maxWidth' => '200px' ) ) ) ) ),
+							array( gl_image( 'giac-logo.png', 'Giacomo Licata Logo', array( 'sizing' => gl_v( array( 'width' => 'auto', 'maxWidth' => '200px' ) ) ), array(), '', '', false ) ),
 							array( 'justifyContent' => 'center', 'alignItems' => 'flex-start' )
 						),
 						gl_col(
@@ -1068,7 +1079,7 @@ function gl_layout_footer( $menu_id ) {
 		'lineHeight' => 'normal',
 		'hover'      => '#996e52',
 	);
-	$center   = array( 'flexDirection' => 'row', 'flexWrap' => 'wrap', 'justifyContent' => 'center', 'alignItems' => 'center', 'columnGap' => '20px' );
+	$center   = array( 'flexDirection' => 'row', 'flexWrap' => 'nowrap', 'justifyContent' => 'center', 'alignItems' => 'center', 'columnGap' => '20px' );
 
 	return array(
 		gl_section(
@@ -1094,7 +1105,7 @@ function gl_layout_footer( $menu_id ) {
 				gl_row(
 					'Footer bar',
 					array(
-						gl_col( 8, array( gl_image( 'logo.png', 'Footer Logo', array( 'sizing' => gl_v( array( 'width' => 'auto', 'maxWidth' => '200px' ) ) ) ) ), array( 'alignItems' => 'center', 'justifyContent' => 'center' ) ),
+						gl_col( 8, array( gl_image( 'logo.png', 'Footer Logo', array( 'sizing' => gl_v( array( 'width' => 'auto', 'maxWidth' => '200px' ) ) ), array(), '', '', false ) ), array( 'alignItems' => 'center', 'justifyContent' => 'center' ) ),
 						gl_col( 8, array( gl_menu_links( $menu_id, 'Giacomo Licata Menu', $nav_font, array( 'size' => '12px' ), 'gl-footer-nav-item' ) ), $center ),
 						gl_col( 8, array( gl_text( 'Social icons', '<div class="gl-social">' . $social . '</div>', gl_font( '16px', '#ffffff', '400', 'center' ) ) ), $center ),
 					),

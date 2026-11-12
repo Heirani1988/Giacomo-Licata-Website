@@ -2,7 +2,7 @@
    Giacomo Licata – Divi 5 child theme
    Page, header and footer design is set in each module's Divi settings.
    This file only holds what Divi has no setting for:
-     1. Base: page background + font (as on the original site)
+     1. Base: page background + font (as on the original site), fixed-height images
      2. Header: fixed over the page, dark after scrolling, current-page link
      3. Hover overlays on the Team / News images + News lightbox
      4. Fallback header/footer (header.php / footer.php), used only when no
@@ -32,6 +32,19 @@ body.gl-site .et-l--header,
 body.gl-site .et-l--footer {
 	background: transparent;
 	padding-top: 0;
+}
+
+/* Fixed-height images (box photos 200px, products 250px): Divi's Image module has
+   no height setting for the picture itself, so it fills the module's height here.
+   object-fit (cover / fill) is set natively on each Image module. */
+body.gl-site .gl-img-fill .et_pb_image_wrap {
+	display: block !important;
+	width: 100% !important;
+	height: 100%;
+}
+body.gl-site .gl-img-fill .et_pb_image_wrap img {
+	width: 100%;
+	height: 100%;
 }
 
 /* 2. Header -------------------------------------------------------------- */

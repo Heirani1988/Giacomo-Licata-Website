@@ -7,7 +7,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'GL_THEME_VERSION', '2.0.0' );
+define( 'GL_THEME_VERSION', '2.0.1' );
 define( 'GL_THEME_DIR', get_stylesheet_directory() );
 define( 'GL_THEME_URI', get_stylesheet_directory_uri() );
 
